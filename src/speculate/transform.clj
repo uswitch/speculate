@@ -63,12 +63,11 @@
         from-ast        (ast/parse from-spec)
         min-from-ast    (ast/shake to-nodeset from-ast)
         from-nodeset    (walk/nodeset min-from-ast)
-        [value-index s] (tx/run-walk min-from-ast value include)
-        to-value        (tc/combine value-index
-                                    (-> s
-                                        (select-keys [:categorized :pathset-union])
-                                        (assoc :from-nodeset from-nodeset))
-                                    to-ast)]
+        [value-index s] (tx/run-walk min-from-ast value include to-nodeset)
+        extract-meta    (-> s
+                            (select-keys [:categorized :pathset-union :pulled])
+                            (assoc :from-nodeset from-nodeset))
+        to-value        (tc/combine value-index extract-meta to-ast)]
     (assert (s/valid? to-spec to-value)
             (format "Transformed value does not conform to spec: %s\n%s\n%s"
                     to-spec

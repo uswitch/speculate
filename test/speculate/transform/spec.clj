@@ -57,7 +57,8 @@
 
 (s/def :test3/polygons
   (u/spec
-   :spec (s/keys :opt-un [:test3/type1 :test3/type2])
+   :spec (s/and (s/keys :opt-un [:test3/type1 :test3/type2])
+                #(> (count (keys %)) 0))
    :categorize {:test3/type keys}))
 
 (def test3-polygons
@@ -93,7 +94,7 @@
           :opt-un [::radius]))
 
 (s/def :test5/polygon-set
-  (s/coll-of :test5/shape))
+  (s/coll-of :test5/shape :min-count 1))
 
 (s/def :test5/polygon-type #{:type1 :type2 :type3})
 
