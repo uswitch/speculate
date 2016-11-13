@@ -106,9 +106,12 @@
 (defmulti -combine (fn [value-index _ ast] (::ast/type ast)))
 
 (defn combine [value-index index-meta ast]
-  (if (:leaf ast)
-    (combine-leaf-value value-index ast)
-    (-combine value-index index-meta ast)))
+  (cond (:leaf ast)
+        (combine-leaf-value value-index ast)
+        (contains? (:pulled index-meta) (::ast/name ast))
+        (combine-leaf-value value-index ast)
+        :default
+        (-combine value-index index-meta ast)))
 
 (defn filter-when [cond pred coll]
   (cond->> coll cond (filter pred)))
@@ -127,7 +130,11 @@
              (filter (fn [{:keys [pathset]}]
                        (contains? pathset name)))
              (seq))
-        ;; (contains? from-nodeset name)
+        (contains? from-nodeset name)
+        (->> value-index
+             (filter (fn [{:keys [pathset]}]
+                       (contains? pathset name)))
+             (seq))
         ;; nil
         :else
         value-index))
@@ -271,7 +278,6 @@
         (maybe/some->> value-index
                        (categorize (:categorized index-meta) cat?)
                        (maybe/keep #(combine % index-meta (:form ast)))
-                       (maybe/seq)
                        (into coll-into))
         (maybe/some->> value-index
                        (only-leaves ast)

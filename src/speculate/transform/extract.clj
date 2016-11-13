@@ -6,7 +6,8 @@
    [clojure.spec :as s]
    [speculate.ast :as ast]
    [speculate.util :as util]
-   [speculate.transform.state :as state]))
+   [speculate.transform.state :as state]
+   [clojure.string :as string]))
 
 
 (defn alias [spec]
@@ -22,10 +23,10 @@
 
 (defn leaf-value
   [{:keys [label categorize coll-indexes pathset] :as state}
-   {:keys [::ast/name]} node]
+   {:keys [::ast/name] :as ast} node]
   (let [spec  (or name label)
         value (s/conform spec node)]
-    (assert-conform! label node value)
+    (assert-conform! spec node value)
     [[{:label (or name label)
        :value (s/unform spec value)
        :pathset pathset
@@ -42,21 +43,30 @@
       (throw (ex-info "Node doesn't conform-to spec" {:spec spec :node node}))
       value)))
 
-(defn walk [state ast node]
-  ;; (ensure-conform (::ast/name spec) node)
+(defn walk [state {:keys [leaf] :as ast} node]
+  ;; (ensure-conform (::parse/name spec) node)
   ;; ^^ quick conform
   (let [parse-name (::ast/name ast)
-        inc-alias? (contains? (:include state) parse-name)
-        [included] (when inc-alias?
-                     (or (leaf-value state ast node)
-                         (throw
-                          (Exception.
-                           (format "Extract keys: Value not present for required key: %s" parse-name)))))]
-    (if (:leaf ast)
-      (leaf-value state ast node)
-      (-> (-walk state ast node)
-          (state/reset state :categorize)
-          (cond-> included (state/update-value concat included))))))
+        pull-leaf? (and parse-name
+                        (not leaf)
+                        (contains? (:to-nodeset state) parse-name))]
+    (let [inc-alias? (contains? (:include state) parse-name)
+          [included] (when inc-alias?
+                       (or (leaf-value state ast node)
+                           (throw
+                            (Exception.
+                             (format "Extract keys: Value not present for required key: %s" parse-name)))))
+          [pulled s] (when pull-leaf?
+                       (-> state
+                           (update :pulled (fnil conj #{}) parse-name)
+                           (leaf-value ast node)))]
+      (if leaf
+        (leaf-value state ast node)
+        (-> (-walk (if s s state) ast node)
+            (state/reset state :categorize)
+            (cond->
+                included (state/update-value concat included)
+                pulled   (state/update-value concat pulled)))))))
 
 (defmethod -walk 'clojure.spec/keys
   [state ast node]
@@ -227,8 +237,9 @@
 
               leaf
               (leaf-value state ast node))
-        (state/update-state (fn [{:keys [categories categorized pathset-union]}]
+        (state/update-state (fn [{:keys [categories categorized pathset-union pulled]}]
                               (assoc state
+                                     :pulled pulled
                                      :pathset-union pathset-union
                                      :categories categories
                                      :categorized categorized))))))
@@ -237,8 +248,8 @@
   [state ast node]
   (leaf-value state ast node))
 
-(defn run-walk [spec node include]
-  (walk {:include include} spec node))
+(defn run-walk [spec node include to-nodeset]
+  (walk {:include include :to-nodeset to-nodeset} spec node))
 
 (defn eval-walk [spec node]
   (first (run-walk spec node)))
