@@ -1,6 +1,7 @@
 (ns speculate.ast
   (:require
-   [clojure.spec :as s]))
+   [clojure.spec :as s]
+   [speculate.util :as util]))
 
 (defn named? [x] (instance? clojure.lang.Named x))
 
@@ -12,6 +13,50 @@
       (symbol (str (.name (.ns v)))
               (str (.sym v))))
     x))
+
+(defn shake [keepset {:keys [::name alias] :as ast}]
+  (if (and name
+           (or (contains? keepset name)
+               (contains? keepset (ffirst alias))
+               (contains? keepset (util/alias name))))
+    ast
+    (case (::type ast)
+      clojure.spec/keys
+      (let [{:keys [req req-un opt opt-un]} (:form ast)
+            req    (seq (keep (partial shake keepset) req))
+            req-un (seq (keep (partial shake keepset) req-un))
+            opt    (seq (keep (partial shake keepset) opt))
+            opt-un (seq (keep (partial shake keepset) opt-un))
+            form   (cond-> nil
+                     req    (assoc :req req)
+                     req-un (assoc :req-un req-un)
+                     opt    (assoc :opt opt)
+                     opt-un (assoc :opt-un opt-un))]
+        (when form
+          (assoc ast :form form)))
+      clojure.spec/or
+      (some->> (:form ast)
+               (keep (juxt first (comp (partial shake keepset) second)))
+               (seq)
+               (into {})
+               (assoc ast :form))
+      clojure.spec/and
+      (let [spec? #(or (util/spec-symbol? (::type %))
+                       (s/spec? (::name %)))]
+        (some->> (:form ast)
+                 (filter spec?)
+                 (keep (partial shake keepset))
+                 (seq)
+                 (assoc ast :form)))
+      speculate.spec/spec
+      (let [{:keys [leaf alias]} ast]
+        (some->> ast :form (shake keepset) (assoc ast :form)))
+      (if (:leaf ast)
+        (let [name (::name ast)]
+          (when (or (contains? keepset name)
+                    (contains? keepset (util/alias name)))
+            ast))
+        (some->> ast :form (shake keepset) (assoc ast :form))))))
 
 (defn categorize [form]
   (cond (map? form)
@@ -125,8 +170,13 @@
               (map (juxt key (comp parse val)))
               (into {}))})
 
+(defn strip-reader-meta [form]
+  (dissoc form :line :column))
+
 (defmethod parse `s/spec? [x]
-  (let [tree (-> (s/form x) parse (merge (meta x)))]
+  (let [tree (-> (s/form x)
+                 (parse)
+                 (merge (strip-reader-meta (meta x))))]
     (cond-> tree
       (instance? clojure.lang.IDeref x) (merge (deref x)))))
 

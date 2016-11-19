@@ -355,7 +355,6 @@
                     'clojure.spec/every   :coll
                     :other)
         value-index' (->> value-index
-                          (only-leaves ast)
                           (categorize-value-index categorized
                                                   categorize?
                                                   (:select ast)))

@@ -41,10 +41,12 @@
                   (s/explain from-spec value)))
   (let [to-ast          (ast/parse to-spec)
         to-leaves       (tc/leaves to-ast)
+        to-nodeset      (walk/nodeset to-ast)
         include         (->> to-leaves (keep (comp first first :alias-map)) set)
         from-ast        (ast/parse from-spec)
-        from-nodeset    (walk/nodeset from-ast)
-        [value-index s] (tx/run-walk from-ast value include)
+        min-from-ast    (ast/shake to-nodeset from-ast)
+        from-nodeset    (walk/nodeset min-from-ast)
+        [value-index s] (tx/run-walk min-from-ast value include)
         to-value        (tc/combine value-index
                                     (-> s
                                         (select-keys [:categorized :pathset-union])
