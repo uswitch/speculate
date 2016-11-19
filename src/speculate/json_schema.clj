@@ -5,7 +5,7 @@
    [clojure.string :as string]
    [clojure.walk :as walk]
    [speculate.util :as util]
-   [speculate.parse :as parse]
+   [speculate.ast :as ast]
    [speculate.render :refer [render]]))
 
 (def description-keys
@@ -126,15 +126,15 @@
 
 (defmethod render [::renderer 'clojure.spec/keys]
   [_ {{:keys [req req-un opt opt-un]} :form :as spec}]
-  (let [pname (:speculate.parse/name spec)
+  (let [pname (::ast/name spec)
         title (some-> pname name util/pascal-case)
         properties (->> (concat req req-un opt opt-un)
-                        (map (juxt (comp name ::parse/name)
+                        (map (juxt (comp name ::ast/name)
                                   (partial render ::renderer)))
                         (into {}))
         base (cond-> {:type 'object
                       :properties properties
-                      :required (mapv (comp name ::parse/name)
+                      :required (mapv (comp name ::ast/name)
                                       (concat req req-un))}
                pname (assoc :schema-name pname)
                title (assoc :title title))]
@@ -168,7 +168,7 @@
 
 (defmethod render [::renderer 'speculate.spec/spec]
   [_ {:keys [form] :as m}]
-  (let [pname (:speculate.parse/name m)
+  (let [pname (::ast/name m)
         title (some-> pname name util/pascal-case)
         base (cond-> (render ::renderer form)
                :trim (select-keys schema-keys)
@@ -178,7 +178,7 @@
 
 (defmethod render [::renderer ::URI]
   [_ {:keys [::base-uri] :as ast}]
-  (let [pname (::parse/name ast)]
+  (let [pname (::ast/name ast)]
     {"$ref" (format "%s/%s/%s"
                     base-uri
                     (some-> pname namespace (string/replace #"\." "/"))
@@ -186,7 +186,7 @@
 
 (defmethod render [::renderer ::root]
   [_ {:keys [::base-uri form] :as ast}]
-  (let [pname (::parse/name form)
+  (let [pname (::ast/name form)
         sub   (render ::renderer form)]
     (merge sub
            {"$schema" (format "%s/%s/%s"

@@ -4,7 +4,7 @@
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
    [clojure.spec :as s]
-   [speculate.parse :as parse]
+   [speculate.ast :as ast]
    [speculate.transform.extract :as tx]
    [speculate.transform.combine :as tc]
    [speculate.util :as util]
@@ -39,10 +39,10 @@
   (assert (s/valid? from-spec value)
           (format "Value does not conform to spec: %s\n%s" from-spec
                   (s/explain from-spec value)))
-  (let [to-ast          (parse/ast to-spec)
+  (let [to-ast          (ast/parse to-spec)
         to-leaves       (tc/leaves to-ast)
         include         (->> to-leaves (keep (comp first first :alias-map)) set)
-        from-ast        (parse/ast from-spec)
+        from-ast        (ast/parse from-spec)
         from-nodeset    (walk/nodeset from-ast)
         [value-index s] (tx/run-walk from-ast value include)
         to-value        (tc/combine value-index

@@ -4,9 +4,8 @@
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
    [clojure.spec :as s]
-   [speculate.parse :as parse]
+   [speculate.ast :as ast]
    [speculate.util :as util]
-   [speculate.parse :as p]
    [speculate.transform.state :as state]))
 
 
@@ -23,7 +22,7 @@
 
 (defn leaf-value
   [{:keys [label categorize coll-indexes pathset] :as state}
-   {:keys [::parse/name]} node]
+   {:keys [::ast/name]} node]
   (let [spec  (or name label)
         value (s/conform spec node)]
     (assert-conform! label node value)
@@ -35,7 +34,7 @@
                      (assoc spec #{value}))
        :coll-indexes coll-indexes}] state]))
 
-(defmulti -walk (fn [state ast node] (::parse/type ast)))
+(defmulti -walk (fn [state ast node] (::ast/type ast)))
 
 (defn ensure-conform [spec node]
   (let [value (s/conform spec node)]
@@ -44,9 +43,9 @@
       value)))
 
 (defn walk [state ast node]
-  ;; (ensure-conform (::parse/name spec) node)
+  ;; (ensure-conform (::ast/name spec) node)
   ;; ^^ quick conform
-  (let [parse-name (::parse/name ast)
+  (let [parse-name (::ast/name ast)
         inc-alias? (contains? (:include state) parse-name)
         [included] (when inc-alias?
                      (or (leaf-value state ast node)
@@ -63,7 +62,7 @@
   [state ast node]
   (let [{:keys [req req-un opt opt-un]} (:form ast)
         f (fn [un? req? s {:keys [leaf] :as branch-ast}]
-            (let [label (::parse/name branch-ast)
+            (let [label (::ast/name branch-ast)
                   k (cond-> label un? un-ns)
                   s' (-> s
                          (assoc :label label)
@@ -87,7 +86,7 @@
     [(concat a b c d) (util/deep-merge s t u v)]))
 
 (defn -walk-coll [state ast node]
-  (let [spec (::parse/name ast)
+  (let [spec (::ast/name ast)
         categorize (:categorize ast)]
     (state/map-indexed state
                        (fn [state i x]
@@ -111,15 +110,15 @@
 
 (defmethod -walk 'clojure.spec/and
   [state ast node]
-  (let [spec (::parse/name ast)
-        specs (filter (f-or (comp s/spec? ::parse/name)
-                            (comp util/spec-symbol? ::parse/type))
+  (let [spec (::ast/name ast)
+        specs (filter (f-or (comp s/spec? ::ast/name)
+                            (comp util/spec-symbol? ::ast/type))
                       (:form ast))]
     (walk state (first specs) node)))
 
 (defmethod -walk 'clojure.spec/or
   [state ast node]
-  (let [spec (::parse/name ast)
+  (let [spec (::ast/name ast)
         conformed (s/conform spec node)
         _ (assert-conform! spec node conformed)
         [or-key _] conformed
@@ -137,7 +136,7 @@
             (->> vs
                  (mapcat #(when (contains? (s/registry) k)
                             (-> state
-                                (leaf-value (parse/ast k) %)
+                                (leaf-value (ast/parse k) %)
                                 (first))))
                  (remove nil?)))
           set-cats))
@@ -193,7 +192,7 @@
                                       (update :categorized update k set/union k-cat'))]
                            (-> s'
                                (walk form' {k-cat (k-cat node)})
-                               (state/update-value conj (ffirst (leaf-value s' (parse/ast k) k-cat))))))
+                               (state/update-value conj (ffirst (leaf-value s' (ast/parse k) k-cat))))))
                        (f node)))
           (walk state' form' node))
         (state/update-value include-not-present
@@ -204,12 +203,12 @@
 
 (defmethod -walk 'speculate.spec/spec
   [state ast node]
-  (let [{:keys [::parse/name alias leaf form select]} ast
+  (let [{:keys [::ast/name alias leaf form select]} ast
         state' (cond-> state alias (update :alias assoc name alias))
-        form'  (cond-> form (not (::parse/name form)) (assoc ::parse/name name))]
+        form'  (cond-> form (not (::ast/name form)) (assoc ::ast/name name))]
     (-> (cond (:categorize ast)
               (try
-                (condp = (::parse/type form)
+                (condp = (::ast/type form)
                   'clojure.spec/keys    (categorize-map state' ast form' node)
                   'clojure.spec/coll-of (categorize-coll state' ast form' node)
                   'clojure.spec/every   (categorize-coll state' ast form' node)

@@ -4,11 +4,11 @@
    [clojure.set :as set]
    [clojure.spec :as s]
    [clojure.walk :as walk]
-   [speculate.util :as utils]
-   [speculate.parse :as parse]
+   [speculate.ast :as ast]
    [speculate.render :as render]
    [speculate.json-schema :as json]
-   [speculate.spec :as spec]))
+   [speculate.spec :as spec]
+   [speculate.util :as util]))
 
 (defn find
   "Performs a depth-first search in `x` for key `k`, returns `val` for
@@ -44,7 +44,7 @@
     :schema (render/render ::json/renderer (find form :body))}])
 
 (def -responses nil)
-(defmulti -responses ::parse/type)
+(defmulti -responses ::ast/type)
 
 (defmethod -responses `spec/spec [{:keys [form] :as spec}])
 
@@ -58,7 +58,7 @@
 
 (defn responses [{:keys [form] :as spec}]
   (some-> form
-          (match (comp #{`s/fspec} ::parse/type) #(get % :ret))
+          (match (comp #{`s/fspec} ::ast/type) #(get % :ret))
           (:ret)
           (-responses)))
 
@@ -69,7 +69,7 @@
   (-> form (find :headers) (find "Content-Type") :form))
 
 (def -produces nil)
-(defmulti -produces ::parse/type)
+(defmulti -produces ::ast/type)
 
 (defmethod -produces `s/or [{:keys [form]}]
   (->> form
@@ -78,7 +78,7 @@
 
 (defn produces [{:keys [form] :as spec}]
   (some-> form
-          (match (comp #{`s/fspec} ::parse/type) #(get % :ret))
+          (match (comp #{`s/fspec} ::ast/type) #(get % :ret))
           (:ret)
           (-produces)))
 
@@ -87,7 +87,7 @@
 
 (defn parameter [])
 (def -parameters nil)
-(defmulti -parameters ::parse/type)
+(defmulti -parameters ::ast/type)
 (defmethod -parameters `map? [{:keys [form]}]
   (->> form
        (map (fn [[k v]]
@@ -118,22 +118,22 @@
   (clojure.pprint/pprint form)
   (let [query-params (match form
                             (fn [x]
-                              (when-let [pname (::parse/name x)]
+                              (when-let [pname (::ast/name x)]
                                 (and (keyword? pname)
                                      (= "query-params" (name pname))))))
         route-params (match form
                             (fn [x]
-                              (when-let [pname (::parse/name x)]
+                              (when-let [pname (::ast/name x)]
                                 (and (keyword? pname) (= "route-params" (name pname))))))]
     (concat (map (fn [spec]
                    (-> (render/render ::json/renderer spec)
-                       (assoc  :name (name (::parse/name spec)))
+                       (assoc  :name (name (::ast/name spec)))
                        (assoc  :in "query")
                        (dissoc :schema-name)))
                  (find query-params :req-un))
             (map (fn [spec]
                    (-> (render/render ::json/renderer spec)
-                       (assoc  :name (name (::parse/name spec)))
+                       (assoc  :name (name (::ast/name spec)))
                        (assoc  :in "path")
                        (dissoc :schema-name)))
                  (find route-params :req-un)))))
@@ -143,7 +143,7 @@
 (defn render-method [[k {:keys [handler] :as v}]]
   (let [base       (dissoc v :handler)
         method     (name k)
-        ast        (parse/ast handler)
+        ast        (ast/parse handler)
         responses  (some-> ast responses)
         parameters (some-> ast parameters)
         produces   nil;(some-> ast produces)
@@ -173,6 +173,6 @@
                                      (into {}))]))
                    (into {})
                    (walk/postwalk extract))]
-    (merge (utils/camel-case-keys swagger-template)
+    (merge (util/camel-case-keys swagger-template)
            {:paths paths
             :definitions @defs})))
