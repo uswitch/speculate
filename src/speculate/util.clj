@@ -7,6 +7,10 @@
    [clojure.spec :as s]
    [clojure.spec.gen :as gen]))
 
+(defn alias [spec]
+  (when-let [s (get (s/registry) spec)]
+    (when (keyword? s) s)))
+
 (defn deep-merge [& xs]
   (cond (every? map? xs)
         (apply merge-with deep-merge xs)
