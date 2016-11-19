@@ -8,7 +8,8 @@
    [speculate.transform.extract :as tx]
    [speculate.transform.combine :as tc]
    [speculate.util :as util]
-   [speculate.walk :as walk]))
+   [speculate.walk :as walk]
+   [speculate.transform.maybe :as maybe]))
 
 (defn state [f]
   (with-meta (fn [state & args] (apply f state args))
@@ -53,7 +54,10 @@
                                         (assoc :from-nodeset from-nodeset))
                                     to-ast)]
     (assert (s/valid? to-spec to-value)
-            (format "Transformed value does not conform to spec: %s\n%s"
+            (format "Transformed value does not conform to spec: %s\n%s\n%s"
                     to-spec
-                   (s/explain to-spec to-value)))
+                    (s/explain-data to-spec to-value)
+                    (if (maybe/nothing? to-value)
+                      value
+                      "")))
     to-value))
