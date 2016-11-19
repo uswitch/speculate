@@ -46,6 +46,12 @@
   (is (= (round-trip :test2/shapes ts/test2-shapes)
          ts/test2-shapes)))
 
+(deftest test3-a
+  (is (exercise-round-trip :test3/type1)))
+
+(deftest test3-b
+  (is (exercise-round-trip :test3/sub-polygons)))
+
 (deftest test3
   (is (= (round-trip :test3/polygons ts/test3-polygons)
          ts/test3-polygons)))

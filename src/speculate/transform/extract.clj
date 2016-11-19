@@ -123,7 +123,11 @@
         _ (assert-conform! spec node conformed)
         [or-key _] conformed
         form (get (:form ast) or-key)]
-    (walk (update state :categories conj or-key) form node)))
+    (-> state
+        (update :categorize assoc or-key #{or-key})
+        (update :categories (fnil conj #{}) or-key)
+        (update :categorized (partial merge-with set/union) {or-key #{or-key}})
+        (walk form node))))
 
 (defn state-fn? [f]
   (-> f meta :name (= 'state-fn)))

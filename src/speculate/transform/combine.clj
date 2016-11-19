@@ -298,13 +298,18 @@
                          maybe/Nothing))))))
 
 (defmethod -combine 'clojure.spec/or
-  [value-index index-meta ast]
-  (maybe/some (fn [[_ v]]
-                (let [v' (combine value-index index-meta v)]
-                  (if (s/valid? (::ast/name ast) v')
-                    v'
-                    maybe/Nothing)))
-              (:form ast)))
+  [value-index index-meta {:keys [form] :as ast}]
+  (let [ks (set (keys form))]
+    (maybe/some (fn [[k v]]
+                  (let [value-index' (remove (fn [{:keys [categorize] :as value}]
+                                               (seq (select-keys categorize
+                                                                 (disj ks k))))
+                                             value-index)
+                        v' (combine value-index' index-meta v)]
+                    (if (s/valid? (::ast/name ast) v')
+                      v'
+                      maybe/Nothing)))
+                form)))
 
 (defn select [{:keys [categorized]} select value-index]
   (let [categorized (or (-> value-index meta :categorized) categorized)
