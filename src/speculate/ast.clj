@@ -110,25 +110,39 @@
   {::type t
    :form (map parse preds)})
 
+(s/def ::nilable-if
+  (s/and seq?
+         (s/cat :if #{'if}
+                :nil? (s/and seq?
+                             (s/cat :nil? #{`nil?}
+                                    :gensym symbol?))
+                :nil #{[::s/nil nil]}
+                :pred (s/tuple #{::s/pred} symbol?))))
+
+(s/def ::nilable-conformer
+  (s/and seq?
+         (s/cat :conformer #{`s/conformer}
+                :second #{`second}
+                :fn* (s/and seq?
+                            (s/cat :fn* #{'fn*}
+                                   :vector (s/coll-of symbol?
+                                                      :max-count 1
+                                                      :min-count 1
+                                                      :kind vector?)
+                                   :if ::nilable-if)))))
+
+(s/def ::nilable-form
+  (s/cat :and #{`s/and}
+         :or (s/and seq?
+                    (s/cat :or #{`s/or}
+                           :nil #{::s/nil}
+                           :nil? #{`nil?}
+                           :pred #{::s/pred}
+                           :sym symbol?))
+         :conformer ::nilable-conformer))
+
 (defn matches-nilable? [x]
-  (when (and (sequential? x)
-             (sequential? (second x))
-             (sequential? (nth x 2)))
-    (let [[_
-           [or? knil? snil? pred? _ ]
-           [con? second? [fn*? vec? [if? [ssnil?] [kknil?] [ppred?]]]]] x]
-      (and (= 'clojure.spec/or or?)
-           (= :clojure.spec/nil knil?)
-           (= 'clojure.core/nil? snil?)
-           (= :clojure.spec/pred pred?)
-           (= 'clojure.spec/conformer con?)
-           (= 'clojure.core/second second?)
-           (= 'fn* fn*?)
-           (vector? vec?)
-           (= 'if if?)
-           (= 'clojure.core/nil? ssnil?)
-           (= :clojure.spec/nil kknil?)
-           (= :clojure.spec/pred ppred?)))))
+  (s/valid? ::nilable-form x))
 
 (defmethod parse `s/and     [x]
   (if (matches-nilable? x)
