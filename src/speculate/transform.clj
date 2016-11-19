@@ -4,6 +4,7 @@
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
    [clojure.spec :as s]
+   [clojure.walk :refer [postwalk]]
    [speculate.ast :as ast]
    [speculate.transform.extract :as tx]
    [speculate.transform.combine :as tc]
@@ -35,12 +36,27 @@
              (with-out-str
                (pprint (set/difference to-leaf-set from-leaf-set)))))))
 
+(defn strip-keys-categorizations [ast]
+  (postwalk (fn [ast]
+              (or (when (map? ast)
+                    (let [{:keys [::ast/type categorize]} ast]
+                      (when (and type (= type 'speculate.spec/spec) categorize)
+                        (let [c (some->> categorize
+                                         (remove (comp #{keys} second))
+                                         (seq)
+                                         (into {}))]
+                          (if c
+                            (assoc ast :categorize ast)
+                            (dissoc ast :categorize))))))
+                  ast))
+            ast))
+
 (defn transform
   [from-spec to-spec value]
   (assert (s/valid? from-spec value)
           (format "Value does not conform to spec: %s\n%s" from-spec
                   (s/explain from-spec value)))
-  (let [to-ast          (ast/parse to-spec)
+  (let [to-ast          (strip-keys-categorizations (ast/parse to-spec))
         to-leaves       (tc/leaves to-ast)
         to-nodeset      (walk/nodeset to-ast)
         include         (->> to-leaves (keep (comp first first :alias-map)) set)
