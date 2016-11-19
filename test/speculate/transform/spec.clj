@@ -45,7 +45,7 @@
   [{:type :square :points [{:x 0 :y 0} {:x 50 :y 0} {:x 50 :y 50} {:x 0 :y 50}]}
    {:type :triangle :points [{:x 70 :y 50} {:x 90 :y 0} {:x 110 :y 50}]}])
 
-(s/def :test3/sub-polygons (s/or :type1 :test1/shapes :type2 :test2/shapes))
+(s/def :test3/sub-polygons (s/or :or-type1 :test1/shapes :or-type2 :test2/shapes))
 
 (s/def :test3/polygon (s/keys :req-un [:test3/sub-polygons]))
 
@@ -78,7 +78,7 @@
 (s/def :test4/simple-map
   (u/spec
    :spec (s/keys :req-un [:test4/thing1 :test4/thing2 :test4/types])
-   :categorize {:test4/type :types}))
+   :categorize {:type :types}))
 ;; ^^ when there is a key type like above, which is also a key, it
 ;; becomes hard to reconstruct
 
@@ -139,7 +139,8 @@
 (s/def :test6/map
   (u/spec
    :spec (s/keys :req-un [::10 ::11])
-   :categorize {:test6/region keys}))
+   :categorize {:test6/region keys}
+   ))
 
 (s/def :test7/cat-1 #{"Electricity" "Gas"})
 (s/def :test7/cat-2 #{"Standard" "Economy 7"})
@@ -172,13 +173,14 @@
 
 (s/def :test9/electricity
   (u/spec
-   :spec :test9/fuel
+   :spec (s/and :test9/fuel #(= "electricity" (:fuel-type %)))
    :select {:fuel #{"electricity"}}))
 
 (s/def :test9/gas
   (u/spec
-   :spec :test9/fuel
+   :spec (s/and :test9/fuel #(= "gas" (:fuel-type %)))
    :select {:fuel #{"gas"}}))
+
 ;; useful if we can generate this from :test9/fuel spec, and filter by
 ;; categorize/select the below 2nd place and spec does this, so we
 ;; should be able to move this up, and maybe make it part of the

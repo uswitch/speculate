@@ -19,7 +19,6 @@
 
 (defn gen-extract [spec]
   (let [gen-value (gen/generate (s/gen spec))]
-    (pp gen-value)
     (extract spec gen-value)))
 
 (defn round-trip [spec value]
@@ -27,7 +26,6 @@
 
 (defn gen-round-trip [spec]
   (let [gen-value (gen/generate (s/gen spec))]
-    (pp gen-value)
     [gen-value (round-trip spec gen-value)]))
 
 (defn exercise-round-trip
@@ -62,6 +60,9 @@
 (deftest test5
   (is (= (round-trip :test5/polygons-coll ts/test5-categorized-polygons)
          ts/test5-categorized-polygons)))
+
+(deftest test6-a
+  (is (exercise-round-trip (keyword "speculate.transform.spec" "10"))))
 
 (deftest test6
   (is (apply = (gen-round-trip :test6/map))))
