@@ -3,22 +3,91 @@
    [clojure.spec :as s]
    [speculate.util :as util]))
 
-(defn named? [x] (instance? clojure.lang.Named x))
+(defn alias [spec]
+  (when-let [s (get (s/registry) spec)]
+    (when (keyword? s) s)))
 
-(defn ->sym
-  "Returns a symbol from a symbol or var"
-  [x]
-  (if (var? x)
-    (let [^clojure.lang.Var v x]
-      (symbol (str (.name (.ns v)))
-              (str (.sym v))))
-    x))
+(defn push-down-name [name form]
+  (throw (Exception. "Deprecated: push-down-name"))
+  (cond-> form
+    (not (::name form))
+    (assoc ::name name)))
 
-(defn shake [keepset {:keys [::name alias] :as ast}]
+(defn node-value
+  [{:keys [::name] :as ast}]
+  (if name
+    [{:label name
+      :alias (alias name)
+      :alias-map (:alias ast)}]
+    []))
+
+(defrecord Walked [value])
+
+(defn walked [value]
+  (->Walked value))
+
+(defn walk [f ast]
+  (let [value (f ast)]
+    (if (instance? Walked value)
+      (:value value)
+      (concat
+       value
+       (case (::type ast)
+
+         clojure.spec/keys
+         (let [{:keys [req req-un opt opt-un]} (:form ast)]
+           (mapcat (partial walk f) (concat req req-un opt opt-un)))
+
+         clojure.spec/every
+         (walk f (:form ast))
+
+         clojure.spec/coll-of
+         (walk f (:form ast))
+
+         clojure.spec/or
+         (mapcat (comp (partial walk f) val) (:form ast))
+
+         clojure.spec/and
+         (mapcat (partial walk f) (:form ast))
+
+         speculate.spec/spec
+         (let [{:keys [::name alias leaf form]} ast]
+           (cond alias
+                 (f ast)
+                 (not leaf)
+                 (walk f form)
+                 leaf
+                 (f ast)))
+
+         [])))))
+
+(defn leaves [ast]
+  (distinct (walk (fn [{:keys [leaf] :as ast}]
+                    (if leaf (node-value ast) []))
+                  ast)))
+
+(defn leafset [ast]
+  (->> ast
+       (leaves)
+       (mapcat (juxt (comp ffirst :alias-map) :alias :label))
+       (remove nil?)
+       (set)))
+
+(defn nodes [ast]
+  (walk node-value ast))
+
+(defn nodeset [ast]
+  (->> ast
+       (nodes)
+       (mapcat (juxt (comp ffirst :alias-map) :alias :label))
+       (remove nil?)
+       (set)))
+
+(defn shake [keepset {:keys [::name] :as ast}]
   (if (and name
            (or (contains? keepset name)
-               (contains? keepset (ffirst alias))
-               (contains? keepset (util/alias name))))
+               (contains? keepset (ffirst (::alias ast)))
+               (contains? keepset (alias name))))
     ast
     (case (::type ast)
       clojure.spec/keys
@@ -49,12 +118,12 @@
                  (seq)
                  (assoc ast :form)))
       speculate.spec/spec
-      (let [{:keys [leaf alias]} ast]
+      (let [{:keys [leaf]} ast]
         (some->> ast :form (shake keepset) (assoc ast :form)))
       (if (:leaf ast)
         (let [name (::name ast)]
           (when (or (contains? keepset name)
-                    (contains? keepset (util/alias name)))
+                    (contains? keepset (alias name)))
             ast))
         (some->> ast :form (shake keepset) (assoc ast :form))))))
 
@@ -69,8 +138,8 @@
         `var?
         (set? form)
         `set?
-        (named? form)
-        `named?))
+        (util/named? form)
+        `util/named?))
 
 (defn search
   [pred form]
@@ -161,6 +230,7 @@
 (defmethod parse `s/map-of  [x] (pred-opts-form x))
 
 (defmethod parse 'speculate.spec/nillable? [[t form]]
+  (throw (Exception. "Deprecated: speculate.spec/nillable?"))
   {::type t :form (parse form)})
 
 (defmethod parse 'speculate.spec/spec [[_ & pairs]]
@@ -171,12 +241,6 @@
 
 (defmethod parse 'speculate.spec/strict [[_ merged-keys-form]]
   (parse merged-keys-form))
-
-(defmethod parse 'speculate.spec/map [[t m]]
-  {::type t
-   :form (->> m
-              (map (juxt key (comp parse val)))
-              (into {}))})
 
 (defmethod parse `map? [m]
   {::type `map?
@@ -194,7 +258,7 @@
     (cond-> tree
       (instance? clojure.lang.IDeref x) (merge (deref x)))))
 
-(defmethod parse `named? [x]
+(defmethod parse `util/named? [x]
   (if-let [reg (get (s/registry) x)]
     (let [form (parse reg)
           leaf? (not (search ::name form))]
@@ -205,7 +269,7 @@
       (throw (Exception. (format "Could not find spec in registry: %s" x))))))
 
 (defmethod parse `var? [x]
-  (when-let [reg (get (s/registry) (->sym x))]
+  (when-let [reg (get (s/registry) (util/->sym x))]
     (parse reg)))
 
 (defmethod parse `set? [x]
