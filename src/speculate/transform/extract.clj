@@ -22,17 +22,16 @@
     (throw (ex-info "Value doesn't conform-to spec" {:spec spec :value orig-value}))))
 
 (defn leaf-value
-  [{:keys [label categorize coll-indexes pathset] :as state}
+  [{:keys [categorize coll-indexes pathset] :as state}
    {:keys [::ast/name] :as ast} node]
-  (let [spec  (or name label)
-        value (s/conform spec node)]
-    (assert-conform! spec node value)
-    [[{:label (or name label)
-       :value (s/unform spec value)
+  (let [value (s/conform name node)]
+    (assert-conform! name node value)
+    [[{:label name
+       :value (s/unform name value)
        :pathset pathset
        :categorize (cond-> categorize
-                     (contains? categorize spec)
-                     (assoc spec #{value}))
+                     (contains? categorize name)
+                     (assoc name #{value}))
        :coll-indexes coll-indexes}] state]))
 
 (defmulti -walk (fn [state ast node] (::ast/type ast)))
@@ -75,7 +74,6 @@
             (let [label (::ast/name branch-ast)
                   k (cond-> label un? un-ns)
                   s' (-> s
-                         (assoc :label label)
                          (cond-> (not leaf)
                            (update :pathset (fnil conj #{}) label)))]
               (if (contains? node k)
@@ -96,13 +94,13 @@
     [(concat a b c d) (util/deep-merge s t u v)]))
 
 (defn -walk-coll [state ast node]
-  (let [spec (::ast/name ast)
+  (let [label (::ast/name ast)
         categorize (:categorize ast)]
     (state/map-indexed state
                        (fn [state i x]
                          (-> (cond-> state
                                (not categorize)
-                               (assoc-in [:coll-indexes spec] i))
+                               (assoc-in [:coll-indexes label] i))
                              (walk (:form ast) x)
                              (state/reset state :coll-indexes)))
                        node)))
@@ -120,17 +118,16 @@
 
 (defmethod -walk 'clojure.spec/and
   [state ast node]
-  (let [spec (::ast/name ast)
-        specs (filter (f-or (comp s/spec? ::ast/name)
+  (let [specs (filter (f-or (comp s/spec? ::ast/name)
                             (comp util/spec-symbol? ::ast/type))
                       (:form ast))]
     (walk state (first specs) node)))
 
 (defmethod -walk 'clojure.spec/or
   [state ast node]
-  (let [spec (::ast/name ast)
-        conformed (s/conform spec node)
-        _ (assert-conform! spec node conformed)
+  (let [label (::ast/name ast)
+        conformed (s/conform label node)
+        _ (assert-conform! label node conformed)
         [or-key _] conformed
         form (get (:form ast) or-key)]
     (-> state
@@ -218,22 +215,21 @@
 (defmethod -walk 'speculate.spec/spec
   [state ast node]
   (let [{:keys [::ast/name alias leaf form select]} ast
-        state' (cond-> state alias (update :alias assoc name alias))
-        form'  (cond-> form (not (::ast/name form)) (assoc ::ast/name name))]
+        state' (cond-> state alias (update :alias assoc name alias))]
     (-> (cond (:categorize ast)
               (try
                 (condp = (::ast/type form)
-                  'clojure.spec/keys    (categorize-map state' ast form' node)
-                  'clojure.spec/coll-of (categorize-coll state' ast form' node)
-                  'clojure.spec/every   (categorize-coll state' ast form' node)
-                  (categorize-map state' ast form' node))
+                  'clojure.spec/keys    (categorize-map state' ast form node)
+                  'clojure.spec/coll-of (categorize-coll state' ast form node)
+                  'clojure.spec/every   (categorize-coll state' ast form node)
+                  (categorize-map state' ast form node))
                 (catch IllegalArgumentException _ [[]]))
 
               select
-              (walk state' form' node)
+              (walk state' form node)
 
               (not leaf)
-              (walk state' form' node)
+              (walk state' form node)
 
               leaf
               (leaf-value state ast node))
