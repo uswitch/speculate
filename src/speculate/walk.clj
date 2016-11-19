@@ -46,13 +46,15 @@
          clojure.spec/or
          (mapcat (comp (partial walk f) val) (:form ast))
 
+         clojure.spec/and
+         (mapcat (partial walk f) (:form ast))
+
          speculate.spec/spec
-         (let [{:keys [::ast/name alias leaf form]} ast
-               form' (push-down-name name form)]
+         (let [{:keys [::ast/name alias leaf form]} ast]
            (cond alias
                  (f ast)
                  (not leaf)
-                 (walk f form')
+                 (walk f form)
                  leaf
                  (f ast)))
 
@@ -71,9 +73,7 @@
        (set)))
 
 (defn nodes [ast]
-  (walk (fn [{:keys [::ast/name] :as ast}]
-          (if name (node-value ast) []))
-        ast))
+  (walk node-value ast))
 
 (defn nodeset [ast]
   (->> ast
