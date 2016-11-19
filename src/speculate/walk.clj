@@ -1,7 +1,7 @@
 (ns speculate.walk
   (:require
    [clojure.spec :as s]
-   [speculate.parse :as parse]))
+   [speculate.ast :as ast]))
 
 (defn alias [spec]
   (when-let [s (get (s/registry) spec)]
@@ -9,11 +9,11 @@
 
 (defn push-down-name [name form]
   (cond-> form
-    (not (::parse/name form))
-    (assoc ::parse/name name)))
+    (not (::ast/name form))
+    (assoc ::ast/name name)))
 
 (defn node-value
-  [{:keys [::parse/name] :as ast}]
+  [{:keys [::ast/name] :as ast}]
   (if name
     [{:label name
       :alias (alias name)
@@ -31,7 +31,7 @@
       (:value value)
       (concat
        value
-       (case (::parse/type ast)
+       (case (::ast/type ast)
 
          clojure.spec/keys
          (let [{:keys [req req-un opt opt-un]} (:form ast)]
@@ -47,7 +47,7 @@
          (mapcat (comp (partial walk f) val) (:form ast))
 
          speculate.spec/spec
-         (let [{:keys [::parse/name alias leaf form]} ast
+         (let [{:keys [::ast/name alias leaf form]} ast
                form' (push-down-name name form)]
            (cond alias
                  (f ast)
@@ -71,7 +71,7 @@
        (set)))
 
 (defn nodes [ast]
-  (walk (fn [{:keys [::parse/name] :as ast}]
+  (walk (fn [{:keys [::ast/name] :as ast}]
           (if name (node-value ast) []))
         ast))
 

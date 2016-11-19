@@ -1,6 +1,6 @@
 (ns speculate.render)
 
-(defmulti render (fn [renderer x] [renderer (:speculate.parse/type x)]))
+(defmulti render (fn [renderer x] [renderer (:speculate.ast/type x)]))
 
 (defmethod render [::abbrev 'clojure.core/set?]
   [_ {:keys [form]}]

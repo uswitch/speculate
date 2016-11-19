@@ -1,7 +1,6 @@
-(ns speculate.parse
+(ns speculate.ast
   (:require
-   [clojure.spec :as s]
-   [speculate.parse :as p]))
+   [clojure.spec :as s]))
 
 (defn named? [x] (instance? clojure.lang.Named x))
 
@@ -39,32 +38,32 @@
       (some rpred form)
       (coll? form) (some rpred form))))
 
-(defmulti ast categorize)
+(defmulti parse categorize)
 
-(defmethod ast `s/keys [[t & pairs]]
+(defmethod parse `s/keys [[t & pairs]]
   (let [form (apply hash-map pairs)]
     {::type t
      :form (-> form
-               (update :req    (partial mapv ast))
-               (update :req-un (partial mapv ast))
-               (update :opt    (partial mapv ast))
-               (update :opt-un (partial mapv ast)))}))
+               (update :req    (partial mapv parse))
+               (update :req-un (partial mapv parse))
+               (update :opt    (partial mapv parse))
+               (update :opt-un (partial mapv parse)))}))
 
 (defn kv-form [[t & pairs]]
   {::type t
    :form (->> pairs
               (partition 2)
-              (map (juxt first (comp ast second)))
+              (map (juxt first (comp parse second)))
               (into {}))})
 
-(defmethod ast `s/alt     [x] (kv-form x))
-(defmethod ast `s/cat     [x] (kv-form x))
-(defmethod ast `s/fspec   [x] (kv-form x))
-(defmethod ast `s/or      [x] (kv-form x))
+(defmethod parse `s/alt     [x] (kv-form x))
+(defmethod parse `s/cat     [x] (kv-form x))
+(defmethod parse `s/fspec   [x] (kv-form x))
+(defmethod parse `s/or      [x] (kv-form x))
 
 (defn pred-forms [[t & preds]]
   {::type t
-   :form (map ast preds)})
+   :form (map parse preds)})
 
 (defn matches-nilable? [x]
   (when (and (sequential? x)
@@ -86,54 +85,54 @@
            (= :clojure.spec/nil kknil?)
            (= :clojure.spec/pred ppred?)))))
 
-(defmethod ast `s/and     [x]
+(defmethod parse `s/and     [x]
   (if (matches-nilable? x)
-    (ast (second x))
+    (parse (second x))
     (pred-forms x)))
 
-(defmethod ast `s/tuple   [x] (pred-forms x))
+(defmethod parse `s/tuple   [x] (pred-forms x))
 
 (defn pred-opts-form [[t pred & {:as opts}]]
   (merge opts
          {::type t
-          :form (ast pred)}))
+          :form (parse pred)}))
 
-(defmethod ast `s/coll-of [x] (pred-opts-form x))
-(defmethod ast `s/every   [x] (pred-opts-form x))
-(defmethod ast `s/map-of  [x] (pred-opts-form x))
+(defmethod parse `s/coll-of [x] (pred-opts-form x))
+(defmethod parse `s/every   [x] (pred-opts-form x))
+(defmethod parse `s/map-of  [x] (pred-opts-form x))
 
-(defmethod ast 'speculate.spec/nillable? [[t form]]
-  {::type t :form (ast form)})
+(defmethod parse 'speculate.spec/nillable? [[t form]]
+  {::type t :form (parse form)})
 
-(defmethod ast 'speculate.spec/spec [[_ & pairs]]
+(defmethod parse 'speculate.spec/spec [[_ & pairs]]
   (let [{:keys [spec form] :as m} (apply hash-map pairs)]
     (merge {::type 'speculate.spec/spec}
-           (when spec {:form (ast spec)})
+           (when spec {:form (parse spec)})
            (dissoc m :spec :form :alias :categorize :select))))
 
-(defmethod ast 'speculate.spec/strict [[_ merged-keys-form]]
-  (ast merged-keys-form))
+(defmethod parse 'speculate.spec/strict [[_ merged-keys-form]]
+  (parse merged-keys-form))
 
-(defmethod ast 'speculate.spec/map [[t m]]
+(defmethod parse 'speculate.spec/map [[t m]]
   {::type t
    :form (->> m
-              (map (juxt key (comp ast val)))
+              (map (juxt key (comp parse val)))
               (into {}))})
 
-(defmethod ast `map? [m]
+(defmethod parse `map? [m]
   {::type `map?
    :form (->> m
-              (map (juxt key (comp ast val)))
+              (map (juxt key (comp parse val)))
               (into {}))})
 
-(defmethod ast `s/spec? [x]
-  (let [tree (-> (s/form x) ast (merge (meta x)))]
+(defmethod parse `s/spec? [x]
+  (let [tree (-> (s/form x) parse (merge (meta x)))]
     (cond-> tree
       (instance? clojure.lang.IDeref x) (merge (deref x)))))
 
-(defmethod ast `named? [x]
+(defmethod parse `named? [x]
   (if-let [reg (get (s/registry) x)]
-    (let [form (ast reg)
+    (let [form (parse reg)
           leaf? (not (search ::name form))]
       (cond-> (assoc form ::name x)
         leaf? (assoc :leaf true)))
@@ -141,17 +140,17 @@
       {::type `symbol? :form x}
       (throw (Exception. (format "Could not find spec in registry: %s" x))))))
 
-(defmethod ast `var? [x]
+(defmethod parse `var? [x]
   (when-let [reg (get (s/registry) (->sym x))]
-    (ast reg)))
+    (parse reg)))
 
-(defmethod ast `set? [x]
+(defmethod parse `set? [x]
   {::type `set?
    :form x})
 
-(defmethod ast 'clojure.spec/conformer [x])
+(defmethod parse 'clojure.spec/conformer [x])
 
-(defmethod ast :default [x]
+(defmethod parse :default [x]
   (when x
     (if (and (map? x) (::type x))
      x

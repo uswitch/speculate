@@ -4,7 +4,7 @@
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
    [clojure.spec :as s]
-   [speculate.parse :as parse]
+   [speculate.ast :as ast]
    [speculate.transform.maybe :as maybe]
    [speculate.util :as util]))
 
@@ -14,17 +14,17 @@
 
 (defn push-down-name [name form]
   (cond-> form
-    (not (::parse/name form))
-    (assoc ::parse/name name)))
+    (not (::ast/name form))
+    (assoc ::ast/name name)))
 
 (defn leaf-value
-  [{:keys [::parse/name] :as ast}]
+  [{:keys [::ast/name] :as ast}]
   (assert name (format "Cannot be a leaf without a name: %s" (pr-str ast)))
   [{:label name
     :alias (alias name)
     :alias-map (:alias ast)}])
 
-(defmulti -leaves #(if (:leaf %) :default (::parse/type %)))
+(defmulti -leaves #(if (:leaf %) :default (::ast/type %)))
 
 (defmethod -leaves 'clojure.spec/keys
   [ast]
@@ -44,7 +44,7 @@
   (mapcat (comp -leaves val) (:form ast)))
 
 (defmethod -leaves 'speculate.spec/spec
-  [{:keys [::parse/name alias leaf form] :as ast}]
+  [{:keys [::ast/name alias leaf form] :as ast}]
   (let [form' (push-down-name name form)]
     (cond alias
           (leaf-value ast)
@@ -93,7 +93,7 @@
         value-index))
 
 (defn combine-leaf-value
-  [value-index {:keys [::parse/name] :as ast}]
+  [value-index {:keys [::ast/name] :as ast}]
   (if-let [[[k txfn]] (seq (:alias ast))]
     (if-let [v (get-by value-index k)]
       (txfn (unwrap k v))
@@ -103,7 +103,7 @@
       maybe/Nothing)))
 
 (def -combine nil)
-(defmulti -combine (fn [value-index _ ast] (::parse/type ast)))
+(defmulti -combine (fn [value-index _ ast] (::ast/type ast)))
 
 (defn combine [value-index index-meta ast]
   (if (:leaf ast)
@@ -134,7 +134,7 @@
 
 (defn build-kv-fn
   [value-index {:keys [categorized] :as index-meta}]
-  (fn [construct req? empty {:keys [::parse/name leaf] :as form}]
+  (fn [construct req? empty {:keys [::ast/name leaf] :as form}]
     (if-let [category-value (get-category-value value-index name)]
       (construct name category-value)
       (let [value-index' (if leaf
@@ -143,7 +143,7 @@
             value (combine value-index' index-meta form)
             value (if (and (= :opt req?)
                            ('#{clojure.spec/coll-of
-                               clojure.spec/every} (::parse/type form))
+                               clojure.spec/every} (::ast/type form))
                            (empty? value))
                     maybe/Nothing
                     value)]
@@ -157,10 +157,10 @@
   [value-index index-meta {:keys [keys?] :as ast}]
   (let [{:keys [req req-un opt opt-un]} (:form ast)
         keys?-pred (some-> value-index first :categorize (get keys?))
-        pred       (comp keys?-pred ::parse/name)
+        pred       (comp keys?-pred ::ast/name)
         un-pred    (comp keys?-pred
                          (f-or (partial or-coerce keys?) util/un-ns)
-                         ::parse/name)
+                         ::ast/name)
         construct  vector
         unstruct   (fn [name value] [(util/un-ns name) value])
         opt-empty  (constantly maybe/Nothing)
@@ -246,7 +246,7 @@
   (filter (comp (leaf? ast) :label) value-index))
 
 (defn coll-combine [value-index index-meta ast]
-  (let [spec (::parse/name ast)
+  (let [spec (::ast/name ast)
         form (:form ast)
         coll-index-f #(get-in % [:coll-indexes spec])
         apply-to-all (remove coll-index-f value-index)
@@ -289,11 +289,11 @@
 (defmethod -combine 'clojure.spec/and
   [value-index index-meta ast]
   (->> (:form ast)
-       (filter (f-or (comp s/spec? ::parse/name)
-                     (comp util/spec-symbol? ::parse/type)))
+       (filter (f-or (comp s/spec? ::ast/name)
+                     (comp util/spec-symbol? ::ast/type)))
        (maybe/some (fn [v]
                      (let [v' (combine value-index index-meta v)]
-                       (if (s/valid? (::parse/name ast) v')
+                       (if (s/valid? (::ast/name ast) v')
                          v'
                          maybe/Nothing))))))
 
@@ -301,7 +301,7 @@
   [value-index index-meta ast]
   (maybe/some (fn [[_ v]]
                 (let [v' (combine value-index index-meta v)]
-                  (if (s/valid? (::parse/name ast) v')
+                  (if (s/valid? (::ast/name ast) v')
                     v'
                     maybe/Nothing)))
               (:form ast)))
@@ -346,10 +346,10 @@
 (defmethod -combine 'speculate.spec/spec
   [value-index {:keys [categorized] :as index-meta} ast]
   (let [{:keys [alias form leaf]} ast
-        form' (push-down-name (::parse/name ast) form)
+        form' (push-down-name (::ast/name ast) form)
         categorize? (:categorize ast)
         {[key-cat] :key-cat} (group-by key-cat? categorize?)
-        form-type (condp = (::parse/type form)
+        form-type (condp = (::ast/type form)
                     'clojure.spec/keys    :map
                     'clojure.spec/coll-of :coll
                     'clojure.spec/every   :coll
