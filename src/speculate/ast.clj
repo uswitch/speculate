@@ -1,4 +1,5 @@
 (ns speculate.ast
+  (:refer-clojure :exclude [alias])
   (:require
    [clojure.spec :as s]
    [speculate.util :as util]))
@@ -6,12 +7,6 @@
 (defn alias [spec]
   (when-let [s (get (s/registry) spec)]
     (when (keyword? s) s)))
-
-(defn push-down-name [name form]
-  (throw (Exception. "Deprecated: push-down-name"))
-  (cond-> form
-    (not (::name form))
-    (assoc ::name name)))
 
 (defn node-value
   [{:keys [::name] :as ast}]

@@ -4,12 +4,11 @@
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
    [clojure.spec :as s]
-   [clojure.walk :refer [postwalk]]
+   [clojure.walk :as walk]
    [speculate.ast :as ast]
    [speculate.transform.extract :as tx]
    [speculate.transform.combine :as tc]
    [speculate.util :as util]
-   [speculate.walk :as walk]
    [speculate.transform.maybe :as maybe]))
 
 (defn state [f]
@@ -37,19 +36,20 @@
                (pprint (set/difference to-leaf-set from-leaf-set)))))))
 
 (defn strip-keys-categorizations [ast]
-  (postwalk (fn [ast]
-              (or (when (map? ast)
-                    (let [{:keys [::ast/type categorize]} ast]
-                      (when (and type (= type 'speculate.spec/spec) categorize)
-                        (let [c (some->> categorize
-                                         (remove (comp #{keys} second))
-                                         (seq)
-                                         (into {}))]
-                          (if c
-                            (assoc ast :categorize ast)
-                            (dissoc ast :categorize))))))
-                  ast))
-            ast))
+  (walk/postwalk
+   (fn [ast]
+     (or (when (map? ast)
+           (let [{:keys [::ast/type categorize]} ast]
+             (when (and type (= type 'speculate.spec/spec) categorize)
+               (let [c (some->> categorize
+                                (remove (comp #{keys} second))
+                                (seq)
+                                (into {}))]
+                 (if c
+                   (assoc ast :categorize ast)
+                   (dissoc ast :categorize))))))
+         ast))
+                 ast))
 
 (defn transform
   [from-spec to-spec value]
@@ -57,12 +57,12 @@
           (format "Value does not conform to spec: %s\n%s" from-spec
                   (s/explain from-spec value)))
   (let [to-ast          (strip-keys-categorizations (ast/parse to-spec))
-        to-leaves       (tc/leaves to-ast)
-        to-nodeset      (walk/nodeset to-ast)
+        to-leaves       (ast/leaves to-ast)
+        to-nodeset      (ast/nodeset to-ast)
         include         (->> to-leaves (keep (comp first first :alias-map)) set)
         from-ast        (ast/parse from-spec)
         min-from-ast    (ast/shake to-nodeset from-ast)
-        from-nodeset    (walk/nodeset min-from-ast)
+        from-nodeset    (ast/nodeset min-from-ast)
         [value-index s] (tx/run-walk min-from-ast value include to-nodeset)
         extract-meta    (-> s
                             (select-keys [:categorized :pathset-union :pulled])

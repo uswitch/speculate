@@ -1,5 +1,4 @@
 (ns speculate.transform.combine
-  (:refer-clojure :exclude [* alias])
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
@@ -7,57 +6,6 @@
    [speculate.ast :as ast]
    [speculate.transform.maybe :as maybe]
    [speculate.util :as util]))
-
-(defn alias [spec]
-  (when-let [s (get (s/registry) spec)]
-    (when (keyword? s) s)))
-
-(defn push-down-name [name form]
-  (cond-> form
-    (not (::ast/name form))
-    (assoc ::ast/name name)))
-
-(defn leaf-value
-  [{:keys [::ast/name] :as ast}]
-  (assert name (format "Cannot be a leaf without a name: %s" (pr-str ast)))
-  [{:label name
-    :alias (alias name)
-    :alias-map (:alias ast)}])
-
-(defmulti -leaves #(if (:leaf %) :default (::ast/type %)))
-
-(defmethod -leaves 'clojure.spec/keys
-  [ast]
-  (let [{:keys [req req-un opt opt-un]} (:form ast)]
-    (mapcat -leaves (concat req req-un opt opt-un))))
-
-(defmethod -leaves 'clojure.spec/every
-  [ast]
-  (-leaves (:form ast)))
-
-(defmethod -leaves 'clojure.spec/coll-of
-  [ast]
-  (-leaves (:form ast)))
-
-(defmethod -leaves 'clojure.spec/or
-  [ast]
-  (mapcat (comp -leaves val) (:form ast)))
-
-(defmethod -leaves 'speculate.spec/spec
-  [{:keys [::ast/name alias leaf form] :as ast}]
-  (let [form' (push-down-name name form)]
-    (cond alias
-          (leaf-value ast)
-          (not leaf)
-          (-leaves form')
-          leaf
-          (leaf-value ast))))
-
-(defmethod -leaves :default
-  [ast]
-  (leaf-value ast))
-
-(defn leaves [ast] (distinct (-leaves ast)))
 
 (defn assert-conform! [spec value]
   (when-not (s/valid? spec value)
@@ -98,7 +46,7 @@
     (if-let [v (get-by value-index k)]
       (txfn (unwrap k v))
       maybe/Nothing)
-    (if-let [v (get-by value-index name (alias name))]
+    (if-let [v (get-by value-index name (ast/alias name))]
       (unwrap name v)
       maybe/Nothing)))
 
@@ -244,7 +192,7 @@
 (def leaf?
   (memoize
    (fn [ast]
-     (->> (leaves ast)
+     (->> (ast/leaves ast)
           (mapcat (juxt :label :alias (comp ffirst :alias-map)))
           (remove nil?)
           (set)))))
@@ -357,7 +305,6 @@
 (defmethod -combine 'speculate.spec/spec
   [value-index {:keys [categorized] :as index-meta} ast]
   (let [{:keys [alias form leaf]} ast
-        form' (push-down-name (::ast/name ast) form)
         categorize? (:categorize ast)
         {[key-cat] :key-cat} (group-by key-cat? categorize?)
         form-type (condp = (::ast/type form)
@@ -382,17 +329,17 @@
               (if key-cat
                 (let [[k v] key-cat]
                   (maybe/some->> value-index'
-                                 (maybe/keep #(combine % (cat-fn %) (assoc form' :keys? k)))
+                                 (maybe/keep #(combine % (cat-fn %) (assoc form :keys? k)))
                                  (maybe/seq)
                                  (reduce merge {})))
                 (maybe/some->> value-index'
-                               (maybe/keep #(combine % (cat-fn %) form'))
+                               (maybe/keep #(combine % (cat-fn %) form))
                                (maybe/seq)
                                (reduce valmerge)))
               (maybe/some->> value-index'
-                             (maybe/keep #(combine % (cat-fn %) form'))
+                             (maybe/keep #(combine % (cat-fn %) form))
                              (maybe/seq)))
-            (combine value-index' (cat-fn value-index') form')))))
+            (combine value-index' (cat-fn value-index') form)))))
 
 (defmethod -combine :default
   [value-index _ ast]
