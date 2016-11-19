@@ -19,7 +19,7 @@
         :else
         (last xs)))
 
-(def spec-symbol?
+(def clojure-spec-symbol?
   '#{clojure.spec/&
      clojure.spec/*
      clojure.spec/+
@@ -44,6 +44,14 @@
      clojure.spec/regex?
      clojure.spec/spec
      clojure.spec/tuple})
+
+(def speculate-symbol?
+  '#{speculate.spec/override
+     speculate.spec/spec
+     speculate.spec/strict})
+
+(def spec-symbol?
+  (set/union clojure-spec-symbol? speculate-symbol?))
 
 (defn un-ns [k]
   (keyword (name k)))
