@@ -166,8 +166,9 @@
                               (cat-f node))
                     _ (when (and (not (nil? cat-set)) (empty? cat-set))
                         (throw
-                         (IllegalArgumentException.
-                          (format "Categorization for %s returned no categories" k))))
+                         (ex-info
+                          (format "Categorization for %s returned no categories" k)
+                          {:type :invalid-categorization})))
                     cat-set' (some->> cat-set
                                       (map #(cond->> %
                                               (or (s/spec? k)
@@ -224,7 +225,10 @@
                   'clojure.spec/coll-of (categorize-coll state' ast form node)
                   'clojure.spec/every   (categorize-coll state' ast form node)
                   (categorize-map state' ast form node))
-                (catch IllegalArgumentException _ [[]]))
+                (catch clojure.lang.ExceptionInfo e
+                  (if (= :invalid-categorization (:type (ex-data e)))
+                    [[]]
+                    (throw e))))
 
               select
               (walk state' form node)
