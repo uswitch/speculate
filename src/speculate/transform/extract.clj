@@ -37,15 +37,7 @@
 
 (defmulti -walk (fn [state ast node] (::ast/type ast)))
 
-(defn ensure-conform [spec node]
-  (let [value (s/conform spec node)]
-    (if (= ::s/invalid value)
-      (throw (ex-info "Node doesn't conform-to spec" {:spec spec :node node}))
-      value)))
-
 (defn walk [state {:keys [leaf] :as ast} node]
-  ;; (ensure-conform (::parse/name spec) node)
-  ;; ^^ quick conform
   (let [parse-name (::ast/name ast)
         pull-leaf? (and parse-name
                         (not leaf)
