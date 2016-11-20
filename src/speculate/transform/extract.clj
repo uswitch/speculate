@@ -127,15 +127,18 @@
 (defmethod -walk 'clojure.spec/or
   [state ast node]
   (let [label (::ast/name ast)
-        conformed (s/conform label node)
+        spec (or label (eval (:spec ast)))
+        conformed (s/conform spec node)
         _ (assert-conform! label node conformed)
         [or-key _] conformed
         form (get (:form ast) or-key)]
-    (-> state
-        (update :categorize assoc or-key #{or-key})
-        (update :categories (fnil conj #{}) or-key)
-        (update :categorized (partial merge-with set/union) {or-key #{or-key}})
-        (walk form node))))
+    (if (contains? '#{clojure.spec/pred clojure.spec/nil} or-key)
+      (walk form node)
+      (-> state
+          (update :categorize assoc or-key #{or-key})
+          (update :categories (fnil conj #{}) or-key)
+          (update :categorized (partial merge-with set/union) {or-key #{or-key}})
+          (walk form node)))))
 
 (defn state-fn? [f]
   (-> f meta :name (= 'state-fn)))
