@@ -168,7 +168,7 @@
 (defmethod parse `s/alt     [x] (kv-form x))
 (defmethod parse `s/cat     [x] (kv-form x))
 (defmethod parse `s/fspec   [x] (kv-form x))
-(defmethod parse `s/or      [x] (kv-form x))
+(defmethod parse `s/or      [x] (assoc (kv-form x) :spec x))
 
 (defn pred-forms [[t & preds]]
   {::type t
@@ -181,7 +181,7 @@
                              (s/cat :nil? #{`nil?}
                                     :gensym symbol?))
                 :nil #{[::s/nil nil]}
-                :pred (s/tuple #{::s/pred} symbol?))))
+                :pred (s/tuple #{::s/pred} any?))))
 
 (s/def ::nilable-conformer
   (s/and seq?
@@ -202,11 +202,14 @@
                            :nil #{::s/nil}
                            :nil? #{`nil?}
                            :pred #{::s/pred}
-                           :sym symbol?))
+                           :sym any?))
          :conformer ::nilable-conformer))
 
 (defn matches-nilable? [x]
   (s/valid? ::nilable-form x))
+
+(defn nilable-pred [x]
+  (-> x second (nth 4)))
 
 (defmethod parse `s/and     [x]
   (if (matches-nilable? x)
@@ -223,10 +226,6 @@
 (defmethod parse `s/coll-of [x] (pred-opts-form x))
 (defmethod parse `s/every   [x] (pred-opts-form x))
 (defmethod parse `s/map-of  [x] (pred-opts-form x))
-
-(defmethod parse 'speculate.spec/nillable? [[t form]]
-  (throw (Exception. "Deprecated: speculate.spec/nillable?"))
-  {::type t :form (parse form)})
 
 (defmethod parse 'speculate.spec/spec [[_ & pairs]]
   (let [{:keys [spec form] :as m} (apply hash-map pairs)]
@@ -253,12 +252,25 @@
     (cond-> tree
       (instance? clojure.lang.IDeref x) (merge (deref x)))))
 
+(def complex-type?
+  (comp '#{clojure.spec/coll-of
+           clojure.spec/every
+           clojure.spec/keys
+           clojure.spec/tuple
+           clojure.spec/map-of} ::type))
+
+(defn leaf? [ast]
+  (not (search (fn [x]
+                 (and (complex-type? x)
+                      (or (::name x)
+                          (search ::name x))))
+               ast)))
+
 (defmethod parse `util/named? [x]
   (if-let [reg (get (s/registry) x)]
-    (let [form (parse reg)
-          leaf? (not (search ::name form))]
+    (let [form (parse reg)]
       (cond-> (assoc form ::name x)
-        leaf? (assoc :leaf true)))
+        (leaf? form) (assoc :leaf true)))
     (if (symbol? x)
       {::type `symbol? :form x}
       (throw (Exception. (format "Could not find spec in registry: %s" x))))))
