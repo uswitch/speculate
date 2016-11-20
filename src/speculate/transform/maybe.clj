@@ -1,5 +1,5 @@
 (ns speculate.transform.maybe
-  (:refer-clojure :exclude [keep seq some some->>]))
+  (:refer-clojure :exclude [keep or seq some some->>]))
 
 (alias 'c 'clojure.core)
 
@@ -54,3 +54,11 @@
         (recur pred (next coll))
         x))
     Nothing))
+
+(defmacro or
+  ([] nil)
+  ([x] x)
+  ([x & next]
+   `(let [or# ~x]
+      (if (nothing? or#) (or ~@next) or#))))
+
