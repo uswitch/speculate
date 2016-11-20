@@ -4,6 +4,7 @@
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
    [clojure.spec :as s]
+   [clojure.spec.override]
    [clojure.walk :as walk]
    [speculate.ast :as ast]
    [speculate.transform.extract :as tx]
