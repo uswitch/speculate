@@ -148,13 +148,6 @@
                              (:list pdef)))
            protocol-defs))))
 
-(defmacro nillable? [base-spec]
-  `(override
-    ~base-spec
-    (s/conform* [~'spec ~'x] (if (nil? ~'x) nil (s/conform ~base-spec ~'x)))
-    (s/unform* [~'spec ~'x] (if (nil? ~'x) nil (s/unform ~base-spec ~'x)))
-    (s/describe* [_#] `(nillable? ~(s/form (s/spec ~base-spec))))))
-
 (defn spec-impl
   "Build an object which conforms to the s/Spec protocol, utilising the core
   functions."
@@ -165,7 +158,7 @@
     (reify
       s/Spec
       (s/conform* [_ x] (dt x))
-      (s/unform* [_ x] (if spec (s/unform spec x) x))
+      (s/unform* [_ x] (if spec (s/unform* spec x) x))
       (s/explain* [_ path via in x]
         (cond (s/spec? spec)
               (s/explain* spec path via in x)
