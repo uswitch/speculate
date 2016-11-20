@@ -47,7 +47,7 @@
                                 (seq)
                                 (into {}))]
                  (if c
-                   (assoc ast :categorize ast)
+                   (assoc ast :categorize c)
                    (dissoc ast :categorize))))))
          ast))
                  ast))
