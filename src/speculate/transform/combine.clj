@@ -37,7 +37,7 @@
 
 (defn get-by [value-index & ks]
   (some (fn [{:keys [label] :as value}]
-          (when (contains? (set ks) label) value))
+          (when (contains? (set (remove nil? ks)) label) value))
         value-index))
 
 (defn combine-leaf-value
