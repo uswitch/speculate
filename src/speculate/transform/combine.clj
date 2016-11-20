@@ -54,8 +54,9 @@
 (defmulti -combine (fn [value-index _ ast] (::ast/type ast)))
 
 (defn combine [value-index index-meta ast]
-  (cond (:leaf ast)
-        (combine-leaf-value value-index ast)
+  (cond (or (:alias ast) (:leaf ast))
+        (maybe/or (combine-leaf-value value-index ast)
+                  (-combine value-index index-meta ast))
         (contains? (:pulled index-meta) (::ast/name ast))
         (combine-leaf-value value-index ast)
         :default
@@ -324,8 +325,6 @@
                                                categorized)))]
     (cond (empty? value-index')
           maybe/Nothing
-          (or alias leaf)
-          (combine-leaf-value value-index' ast)
           :default
           (if categorize?
             (if (= form-type :map)
