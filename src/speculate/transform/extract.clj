@@ -25,10 +25,18 @@
 (defn leaf-value
   [{:keys [categorize coll-indexes pathset] :as state}
    {:keys [::ast/name] :as ast} node]
+  (when-not name
+    (throw (ex-info "Cannot be a leaf without a name:"
+                    {:type :invalid-leaf
+                     :ast ast
+                     :node node})))
   (let [value (s/conform name node)]
     (assert-conform! name node value)
     [[{:label name
-       :value (s/unform name value)
+       :value (cond (= value node)
+                    value
+                    (contains? (s/registry) name)
+                    (s/unform name value))
        :pathset pathset
        :categorize (cond-> categorize
                      (contains? categorize name)
