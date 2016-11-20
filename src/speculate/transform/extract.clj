@@ -36,7 +36,13 @@
        :value (cond (= value node)
                     value
                     (contains? (s/registry) name)
-                    (s/unform name value))
+                    (s/unform name value)
+                    :else
+                    (throw (ex-info (format "Cannot unform: %s" name)
+                                    {:type :cannot-unform
+                                     :ast ast
+                                     :value value
+                                     :node node})))
        :pathset pathset
        :categorize (cond-> categorize
                      (contains? categorize name)
