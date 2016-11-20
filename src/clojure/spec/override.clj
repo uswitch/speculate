@@ -74,13 +74,20 @@
                            ::invalid))))
          (unform* [_ x]
            ;; Presume this is a collection for ease
-           (cond (vector? x)
-                 (mapv (partial unform pred) x)
-                 (seq? x)
-                 (map (partial unform pred) x)
-                 (set? x)
-                 (set (map (partial unform pred) x))
-                 :default x))
+           (letfn [(maybe-unform [x]
+                     (cond (and (not (fn? pred))
+                                (contains? (registry) pred))
+                           (unform pred x)
+                           (satisfies? clojure.spec/Spec pred)
+                           (unform pred x)
+                           :else x))]
+             (cond (vector? x)
+                   (mapv maybe-unform x)
+                   (seq? x)
+                   (map maybe-unform x)
+                   (set? x)
+                   (set (map maybe-unform x))
+                   :default x)))
         (explain* [_ path via in x]
                   (c/or (coll-prob x kind kind-form distinct count min-count max-count
                                    path via in)
