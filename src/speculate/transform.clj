@@ -61,6 +61,12 @@
                       path pred in (with-out-str (clojure.pprint/pprint val)))))
        (string/join "\n")))
 
+(defn convert-to-hash-index [value-index]
+  (reduce (fn [init {:keys [label] :as value}]
+            (update init label (fnil conj []) value))
+          {}
+          value-index))
+
 (defn transform
   [from-spec to-spec value]
   (assert (s/valid? from-spec value)
@@ -74,6 +80,7 @@
         min-from-ast    (ast/shake to-nodeset from-ast)
         from-nodeset    (ast/nodeset min-from-ast)
         [value-index s] (tx/run-walk min-from-ast value include to-nodeset)
+        _ (time (convert-to-hash-index value-index))
         extract-meta    (-> s
                             (select-keys [:categorized :pathset-union :pulled])
                             (assoc :from-nodeset from-nodeset))
