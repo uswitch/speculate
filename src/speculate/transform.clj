@@ -75,5 +75,5 @@
                     (s/explain-data to-spec to-value)
                     (if (maybe/nothing? to-value)
                       value
-                      "")))
+                      to-value)))
     to-value))

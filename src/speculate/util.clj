@@ -170,3 +170,13 @@
    `(soft-alias '~alias '~(symbol (format "%s.%s"
                                           (name (.getName *ns*))
                                           (name namespace-sym))))))
+
+(defmacro trace
+  ([label prn-eval? form]
+   `(do
+      (prn (str "Trace: " ~label))
+      (let [result# ~form]
+        (prn result#)
+        ~form)))
+  ([label form]
+   `(trace ~label false ~form)))
