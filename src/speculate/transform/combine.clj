@@ -228,15 +228,12 @@
                        (categorize (:categorized index-meta) cat?)
                        (maybe/keep #(combine % index-meta (:form ast)))
                        (into coll-into))
-        (util/trace
-         "#'coll-combine: 3rd case"
-         (maybe/some->> value-index
-                        (only-leaves ast)
-                        (#(do (prn %) %))
-                        (group-by :coll-indexes)
-                        (vals)
-                        (maybe/keep #(combine % index-meta (:form ast)))
-                        (into coll-into)))))))
+        (maybe/some->> value-index
+                       (only-leaves ast)
+                       (group-by :coll-indexes)
+                       (vals)
+                       (maybe/keep #(combine % index-meta (:form ast)))
+                       (into coll-into))))))
 
 (defmethod -combine 'clojure.spec/every
   [value-index index-meta ast]
