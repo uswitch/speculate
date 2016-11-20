@@ -158,7 +158,12 @@
     (reify
       s/Spec
       (s/conform* [_ x] (dt x))
-      (s/unform* [_ x] (if spec (s/unform* spec x) x))
+      (s/unform* [_ x]
+        (if spec
+          (try
+            (s/unform* spec x)
+            (catch IllegalArgumentException _ x))
+          x))
       (s/explain* [_ path via in x]
         (cond (s/spec? spec)
               (s/explain* spec path via in x)
