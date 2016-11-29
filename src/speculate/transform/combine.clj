@@ -164,7 +164,7 @@
         construct  vector
         unstruct   (fn [name value] [(util/un-ns name) value])
         opt-empty  (constantly maybe/Nothing)
-        req-empty  #(throw (Exception. (format "Combine keys: Value not present for: %s" %)))
+        req-empty  (constantly maybe/Nothing)
         build-kv   (build-kv-fn value-index index-meta)]
     (maybe/some->>
      (concat (->> req
