@@ -52,6 +52,6 @@
                                     to-ast)]
     (assert (s/valid? to-spec to-value)
             (format "Transformed value does not conform to spec: %s\n%s"
-                    to-spec))
-    (s/explain to-spec to-value)
+                    to-spec
+                   (s/explain to-spec to-value)))
     to-value))
