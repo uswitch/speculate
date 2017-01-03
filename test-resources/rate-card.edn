@@ -1,0 +1,117 @@
+{:availability ["electricity" "dual_fuel"],
+ :unfulfillable-payment-methods [],
+ :rate-guarantee
+ {:end-date nil, :fixed true, :duration 24, :available 24},
+ :name "Energy Supplier Energy Plan 1",
+ :name-key "energy-supplier-energy-plan-1",
+ :supplier-name "Energy Supplier Name",
+ :supplier-name-key "energy-supplier-name-key",
+ :status "published",
+ :tariffs
+ [{:regional-rates
+   {:14
+    {:annual-standing-charge 1401.05,
+     :rates [{:threshold nil, :price 14020.05, :night-rate false}]},
+    :18
+    {:rates [{:night-rate false, :threshold nil, :price 18020.05}],
+     :annual-standing-charge 1801.05},
+    :12
+    {:rates [{:price 12020.05, :threshold nil, :night-rate false}],
+     :annual-standing-charge 1201.05},
+    :11
+    {:rates [{:night-rate false, :price 11020.05, :threshold nil}],
+     :annual-standing-charge 1101.05}},
+   :payment-methods ["Monthly Direct Debit" "Variable Direct Debit"],
+   :meter {:variant "Standard", :fuel "Gas"}}
+  {:regional-rates
+   {:14
+    {:rates
+     [{:night-rate false, :threshold nil, :price 14120.05}
+      {:threshold nil, :price 14121.05, :night-rate true}],
+     :annual-standing-charge 1411.05},
+    :18
+    {:rates
+     [{:night-rate false, :threshold nil, :price 18120.05}
+      {:price 18121.05, :threshold nil, :night-rate true}],
+     :annual-standing-charge 1811.05},
+    :12
+    {:rates
+     [{:night-rate false, :price 12120.05, :threshold nil}
+      {:night-rate true, :price 12121.05, :threshold nil}],
+     :annual-standing-charge 1211.05},
+    :11
+    {:annual-standing-charge 1111.05,
+     :rates
+     [{:night-rate false, :price 11120.05, :threshold nil}
+      {:price 11121.05, :threshold nil, :night-rate true}]}},
+   :meter {:fuel "Electricity", :variant "Economy 7"},
+   :payment-methods ["Monthly Direct Debit" "Variable Direct Debit"]}
+  {:regional-rates
+   {:14
+    {:annual-standing-charge 1421.05,
+     :rates [{:price 14220.05, :threshold nil, :night-rate false}]},
+    :18
+    {:rates [{:night-rate false, :threshold nil, :price 18220.05}],
+     :annual-standing-charge 1821.05},
+    :12
+    {:annual-standing-charge 1221.05,
+     :rates [{:night-rate false, :price 12220.05, :threshold nil}]},
+    :11
+    {:rates [{:threshold nil, :price 11220.05, :night-rate false}],
+     :annual-standing-charge 1121.05}},
+   :payment-methods ["Monthly Direct Debit" "Variable Direct Debit"],
+   :meter {:variant "Standard", :fuel "Electricity"}}
+  {:payment-methods ["Pay on Receipt of Bill"],
+   :meter {:variant "Standard", :fuel "Gas"},
+   :regional-rates
+   {:14
+    {:annual-standing-charge 1431.05,
+     :rates [{:night-rate false, :price 14320.05, :threshold nil}]},
+    :18
+    {:rates [{:night-rate false, :price 18320.05, :threshold nil}],
+     :annual-standing-charge 1831.05},
+    :12
+    {:rates [{:night-rate false, :threshold nil, :price 12320.05}],
+     :annual-standing-charge 1231.05},
+    :11
+    {:annual-standing-charge 1131.05,
+     :rates [{:price 11320.05, :threshold nil, :night-rate false}]}}}
+  {:regional-rates
+   {:14
+    {:annual-standing-charge 1441.05,
+     :rates
+     [{:night-rate false, :threshold nil, :price 14420.05}
+      {:night-rate true, :price 14421.05, :threshold nil}]},
+    :18
+    {:annual-standing-charge 1841.05,
+     :rates
+     [{:night-rate false, :threshold nil, :price 18420.05}
+      {:night-rate true, :price 18421.05, :threshold nil}]},
+    :12
+    {:rates
+     [{:night-rate false, :price 12420.05, :threshold nil}
+      {:night-rate true, :price 12421.05, :threshold nil}],
+     :annual-standing-charge 1241.05},
+    :11
+    {:rates
+     [{:threshold nil, :price 11420.05, :night-rate false}
+      {:price 11421.05, :threshold nil, :night-rate true}],
+     :annual-standing-charge 1141.05}},
+   :payment-methods ["Pay on Receipt of Bill"],
+   :meter {:fuel "Electricity", :variant "Economy 7"}}
+  {:meter {:variant "Standard", :fuel "Electricity"},
+   :payment-methods ["Pay on Receipt of Bill"],
+   :regional-rates
+   {:14
+    {:annual-standing-charge 1451.05,
+     :rates [{:night-rate false, :threshold nil, :price 14520.05}]},
+    :18
+    {:rates [{:night-rate false, :price 18520.05, :threshold nil}],
+     :annual-standing-charge 1851.05},
+    :12
+    {:annual-standing-charge 1251.05,
+     :rates [{:night-rate false, :threshold nil, :price 12520.05}]},
+    :11
+    {:annual-standing-charge 1151.05,
+     :rates [{:night-rate false, :price 11520.05, :threshold nil}]}}}],
+ :uuid "29e5d2e5-e073-4a58-9c33-6c358bc7e1e1"}
