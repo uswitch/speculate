@@ -5,7 +5,8 @@
   '[[org.clojure/clojure "1.9.0-alpha14"]])
 
 (def dev-dependencies
-  '[[org.clojure/test.check "0.9.0"]])
+  '[[org.clojure/test.check "0.9.0"]
+    [clj-time "0.13.0"]])
 
 (set-env! :dependencies   dependencies
           :source-paths   #{"src"}
