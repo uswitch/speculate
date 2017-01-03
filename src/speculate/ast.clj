@@ -259,12 +259,10 @@
            clojure.spec/tuple
            clojure.spec/map-of} ::type))
 
-(defn leaf? [ast]
-  (not (search (fn [x]
-                 (and (complex-type? x)
-                      (or (::name x)
-                          (search ::name x))))
-               ast)))
+(defn leaf?
+  "An AST is not a leaf if any of it's decendents has a ::name"
+  [ast]
+  (not (search ::name ast)))
 
 (defmethod parse `util/named? [x]
   (if-let [reg (get (s/registry) x)]
