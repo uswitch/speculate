@@ -5,12 +5,13 @@
    [clojure.set :as set]
    [clojure.spec :as s]
    [clojure.spec.override]
+   [clojure.string :as string]
    [clojure.walk :as walk]
    [speculate.ast :as ast]
    [speculate.transform.extract :as tx]
    [speculate.transform.combine :as tc]
-   [speculate.util :as util]
-   [speculate.transform.maybe :as maybe]))
+   [speculate.transform.maybe :as maybe]
+   [speculate.util :as util]))
 
 (defn state [f]
   (with-meta (fn [state & args] (apply f state args))
@@ -52,6 +53,14 @@
          ast))
                  ast))
 
+(defn format-problems [explaination]
+  (->> explaination
+       (:clojure.spec/problems)
+       (map (fn [{:keys [path pred val in]}]
+              (format "path: %s\npred: %s\n in:   %s\n val:\n%s\n"
+                      path pred in (with-out-str (clojure.pprint/pprint val)))))
+       (string/join "\n")))
+
 (defn transform
   [from-spec to-spec value]
   (assert (s/valid? from-spec value)
@@ -72,8 +81,5 @@
     (assert (s/valid? to-spec to-value)
             (format "Transformed value does not conform to spec: %s\n%s\n%s"
                     to-spec
-                    (s/explain-data to-spec to-value)
-                    (if (maybe/nothing? to-value)
-                      value
-                      to-value)))
+                    (format-problems (s/explain-data to-spec to-value))))
     to-value))
