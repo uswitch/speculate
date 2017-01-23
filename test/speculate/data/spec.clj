@@ -38,4 +38,4 @@
        ))
 
 ;; (isomorphic? ::square ::coordinate-vector square-1)
-(t/transform ::coordinate-vector ::square coordinate-vector-1)
+;; (t/transform ::coordinate-vector ::square coordinate-vector-1)

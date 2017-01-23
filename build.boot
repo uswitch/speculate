@@ -39,7 +39,7 @@
    :dependencies #(conj % '[adzerk/boot-test "1.1.2"])
    :source-paths #(conj % "test"))
   (require 'adzerk.boot-test)
-  (comp (dev) ((resolve 'adzerk.boot-test/test))))
+  (comp (dev) ((resolve 'adzerk.boot-test/test) "-n" "speculate.matcher-test")))
 
 (replace-task!
  [r repl] (comp ((or (cider?) (constantly identity))) (dev) r))

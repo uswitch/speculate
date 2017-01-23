@@ -36,48 +36,48 @@
   ([spec]
    (exercise-round-trip 10 spec)))
 
-(deftest test1
-  (is (= (round-trip :test1/shapes ts/test1-shapes)
-         ts/test1-shapes)))
+;; (deftest test1
+;;   (is (= (round-trip :test1/shapes ts/test1-shapes)
+;;          ts/test1-shapes)))
 
-(deftest test2
-  (is (= (round-trip :test2/shapes ts/test2-shapes)
-         ts/test2-shapes)))
+;; (deftest test2
+;;   (is (= (round-trip :test2/shapes ts/test2-shapes)
+;;          ts/test2-shapes)))
 
-(deftest test3-a
-  (is (exercise-round-trip :test3/type1)))
+;; (deftest test3-a
+;;   (is (exercise-round-trip :test3/type1)))
 
-(deftest test3-b
-  (is (exercise-round-trip :test3/sub-polygons)))
+;; (deftest test3-b
+;;   (is (exercise-round-trip :test3/sub-polygons)))
 
-(deftest test3
-  (is (= (round-trip :test3/polygons ts/test3-polygons)
-         ts/test3-polygons)))
+;; (deftest test3
+;;   (is (= (round-trip :test3/polygons ts/test3-polygons)
+;;          ts/test3-polygons)))
 
-(deftest test4
-  (is (apply = (gen-round-trip :test4/simple-map))))
+;; (deftest test4
+;;   (is (apply = (gen-round-trip :test4/simple-map))))
 
-(deftest test5
-  (is (= (round-trip :test5/polygons-coll ts/test5-categorized-polygons)
-         ts/test5-categorized-polygons)))
+;; (deftest test5
+;;   (is (= (round-trip :test5/polygons-coll ts/test5-categorized-polygons)
+;;          ts/test5-categorized-polygons)))
 
-(deftest test6-a
-  (is (exercise-round-trip (keyword "speculate.transform.spec" "10"))))
+;; (deftest test6-a
+;;   (is (exercise-round-trip (keyword "speculate.transform.spec" "10"))))
 
-(deftest test6
-  (is (apply = (gen-round-trip :test6/map))))
+;; (deftest test6
+;;   (is (apply = (gen-round-trip :test6/map))))
 
-(deftest test7
-  (is (exercise-round-trip :test7/meters)))
+;; (deftest test7
+;;   (is (exercise-round-trip :test7/meters)))
 
-(deftest test8
-  (is (exercise-round-trip :test8/same-spec-different-values)))
+;; (deftest test8
+;;   (is (exercise-round-trip :test8/same-spec-different-values)))
 
-(deftest test9
-  (is (exercise-round-trip :test9/select-on-key-val)))
+;; (deftest test9
+;;   (is (exercise-round-trip :test9/select-on-key-val)))
 
-(deftest test10
-  (is (exercise-round-trip :test10/multiple-test9s)))
+;; (deftest test10
+;;   (is (exercise-round-trip :test10/multiple-test9s)))
 
-(defn read-resource [filename]
-  (read-string (slurp (io/resource filename))))
+;; (defn read-resource [filename]
+;;   (read-string (slurp (io/resource filename))))
