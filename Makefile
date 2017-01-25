@@ -24,5 +24,5 @@ build: bin/boot
 test: bin/boot
 	./bin/boot test
 
-test: bin/boot
+deploy: bin/boot
 	./bin/boot deploy
