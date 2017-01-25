@@ -9,6 +9,7 @@ clean:
 
 mkdirs:
 	mkdir -p bin
+	mkdir -p dev
 
 bin/boot: mkdirs
 	curl -fsSLo bin/boot https://github.com/boot-clj/boot-bin/releases/download/latest/boot.sh
