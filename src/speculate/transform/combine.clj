@@ -141,12 +141,14 @@
                            value-index
                            (restrict-to-path-category index-meta name value-index))
             value (combine value-index' index-meta form)
-            value (if (and (= :opt req?)
-                           ('#{clojure.spec/coll-of
-                               clojure.spec/every} (::parse/type form))
-                           (empty? value))
-                    maybe/Nothing
-                    value)]
+            value (cond (maybe/nothing? value)
+                        maybe/Nothing
+                        (and (= :opt req?)
+                             ('#{clojure.spec/coll-of
+                                 clojure.spec/every} (::parse/type form))
+                             (empty? value))
+                        maybe/Nothing
+                        :else value)]
         (if (maybe/nothing? value)
           (empty name)
           (->> value
