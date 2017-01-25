@@ -9,7 +9,7 @@
 
 (set-env! :dependencies   dependencies
           :source-paths   #{"src"}
-          :resource-paths #{"src" "resources"}
+          :resource-paths #{"src"}
           :exclusions     '[org.clojure/clojure org.clojure/test.check])
 
 (let [ci-user (System/getenv "TRAVIS_USER")
@@ -33,8 +33,7 @@
   "Dev profile"
   []
   (set-env! :dependencies #(vec (concat % dev-dependencies))
-            :source-paths #(conj % "dev" "test")
-            :resource-paths #(conj % "test-resources"))
+            :source-paths #(conj % "dev" "test"))
   (fn [next-handler]
     (fn [fs]
       (next-handler fs))))
