@@ -4,4 +4,3 @@ script: make clean test
 after_success: make deploy
 jdk:
   - oraclejdk8
-  - openjdk8
