@@ -1,0 +1,6 @@
+language: java
+install: make deps
+script: make clean test
+after_success: make deploy
+jdk:
+  - oraclejdk8

@@ -1,5 +1,5 @@
 (def +project+ 'speculate)
-(def +version+ "0.1.0-SNAPSHOT")
+(def +version+ "0.2.0-SNAPSHOT")
 
 (def dependencies
   '[[org.clojure/clojure "1.9.0-alpha14"]])
@@ -9,22 +9,31 @@
 
 (set-env! :dependencies   dependencies
           :source-paths   #{"src"}
-          :resource-paths #{"src" "resources"}
+          :resource-paths #{"src"}
           :exclusions     '[org.clojure/clojure org.clojure/test.check])
+
+(let [ci-user (System/getenv "TRAVIS_USER")
+      ci-pass (System/getenv "TRAVIS_PASS")]
+  (when (and ci-user ci-pass)
+    (set-env! :repositories
+              (-> (into {} (get-env :repositories))
+                  (update "clojars" assoc
+                          :username ci-user
+                          :password ci-pass)
+                  (into [])))))
 
 (task-options!
  pom {:project +project+
       :version +version+
       :license {"Eclipse Public License"
                 "http://www.eclipse.org/legal/epl-v10.html"}}
- push {:repo "releases"})
+ push {:repo "clojars"})
 
 (deftask dev
   "Dev profile"
   []
   (set-env! :dependencies #(vec (concat % dev-dependencies))
-            :source-paths #(conj % "dev" "test")
-            :resource-paths #(conj % "test-resources"))
+            :source-paths #(conj % "dev" "test"))
   (fn [next-handler]
     (fn [fs]
       (next-handler fs))))
