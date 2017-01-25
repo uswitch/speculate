@@ -101,7 +101,7 @@
                         maybe/Nothing
                         (and (= :opt req?)
                              ('#{clojure.spec/coll-of
-                                 clojure.spec/every} (::parse/type form))
+                                 clojure.spec/every} (::ast/type form))
                              (empty? value))
                         maybe/Nothing
                         :else value)]
