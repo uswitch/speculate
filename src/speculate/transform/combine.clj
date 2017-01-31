@@ -106,7 +106,9 @@
                         maybe/Nothing
                         :else value)]
         (if (maybe/nothing? value)
-          (empty name)
+          (if (and leaf req?)
+            (construct name nil)
+            (empty name))
           (->> value
                (assert-conform! name)
                (construct name)))))))

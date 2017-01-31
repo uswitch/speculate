@@ -3,7 +3,7 @@
 
 (alias 'c 'clojure.core)
 
-(def Nothing (Object.))
+(def Nothing (reify Object (toString [_] "Nothing")))
 
 (defn seq [x]
   (if (coll? x)
