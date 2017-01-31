@@ -79,7 +79,7 @@
                             (assoc :from-nodeset from-nodeset))
         to-value        (tc/combine value-index extract-meta to-ast)]
     (assert (s/valid? to-spec to-value)
-            (format "Transformed value does not conform to spec: %s\n%s\n%s"
+            (format "Transformed value does not conform to spec: %s\n%s"
                     to-spec
                     (format-problems (s/explain-data to-spec to-value))))
     to-value))
