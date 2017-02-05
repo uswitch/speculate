@@ -72,9 +72,9 @@
 ;; But using cat to define positional targets would work
 ;; Maybe tuple would be better? That is more specific.
 
-(set (lens/mk (ast/parse (s/tuple ::x)))
-     nil
-     [["test" 10 :thing]])
+;; (set (lens/mk (ast/parse (s/tuple ::x)))
+;;      nil
+;;      [["test" 10 :thing]])
 
 ;; (s/tuple ::a ::b ::c)
 
@@ -87,9 +87,8 @@
 ;; (ast/conform-1 (ast/parse ::arg-list) '("test" 10 [{:d "test"}]))
 ;; (ast/conform-1 (ast/parse ::arg-list) [{:d "test"}])
 (s/def ::value int?)
-;; (bi/value {:type "type-1"} 5)
-;; (ast/parse (u/select string? :type #{"type-1"}))
-
+(s/def ::value-a ::value)
+(s/def ::value-b ::value)
 
 (deftest categorize-test
   (let [spec (u/categorize (s/keys :req-un [::value]) :type :type)]
@@ -97,11 +96,32 @@
              {:type "type-1" :value 5})
        (bi/value {:type "type-1"} 5))))
 
-(let [spec (u/select (u/categorize (s/keys :req-un [::value]) :type :type)
-                     :type #{"type-1"})
+(s/def ::map-1 map?)
+(s/def ::type-1
+  (-> ::map-1
+      (u/categorize :type :type)
+      (u/select :type #{"type-1"})))
+
+(let [spec (s/keys :req-un [::type-1])
       lens (lens/mk (ast/parse spec))]
   (view lens
-        [{:type "type-1" :value 5} {:type "type-2" :value 4}])
+        {:type-1 [{:type "type-1" :value-a 5 :value-b 6}
+                  {:type "type-2" :value 4}]} 
+        )
+  )
+
+(s/def ::map-2 (s/keys :req-un [::value-a ::value-b]))
+(s/def ::type-2
+  (-> ::map-2
+      (u/categorize :type :type)
+      (u/select :type #{"type-2"})))
+
+(let [spec (s/keys :req-un [::type-2])
+      lens (lens/mk (ast/parse spec))]
+  (view lens
+        {:type-2 [{:type "type-1" :value-a 5 :value-b 6}
+                  {:type "type-2" :value-a 3 :value-b 4}]} 
+        )
   )
 
 ;; {:speculate.ast/type speculate.spec/categorize

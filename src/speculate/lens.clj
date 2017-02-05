@@ -1,5 +1,6 @@
 (ns speculate.lens
   (:require
+   [bifocal.functor :refer [ffilter fmap]]
    [bifocal.lens :as lens]
    [clojure.spec :as s]
    [speculate.ast :as ast]
@@ -8,9 +9,9 @@
 
 (defmulti -mk ::ast/type)
 
-(defn mk [{:keys [leaf] :as ast}]
+(defn mk [{:keys [leaf ::ast/name] :as ast}]
   (if (:leaf ast)
-    lens/id
+    (lens/meta (fn [s] (merge (meta s) {:name name})))
     (-mk ast)))
 
 (defmethod -mk `s/keys [ast]
@@ -18,12 +19,13 @@
                   (fn [ast]
                     (comp (lens-f ast) (mk ast))))
         {:keys [req req-un opt opt-un]} (:form ast)]
-    (apply lens/+>>
-           (concat
-            (map (descend (comp lens/key ::ast/name)) req)
-            (map (descend (comp lens/key util/un-ns ::ast/name)) req-un)
-            (map (descend (comp lens/key ::ast/name)) opt)
-            (map (descend (comp lens/key util/un-ns ::ast/name)) opt-un)))))
+    (comp (apply lens/+>>
+                 (concat
+                  (map (descend (comp lens/key ::ast/name)) req)
+                  (map (descend (comp lens/key util/un-ns ::ast/name)) req-un)
+                  (map (descend (comp lens/key ::ast/name)) opt)
+                  (map (descend (comp lens/key util/un-ns ::ast/name)) opt-un)))
+          lens/flatten)))
 
 (defmethod -mk `s/or [ast]
   (apply lens/cond
@@ -55,7 +57,14 @@
         (mk (:form ast))))
 
 (defmethod -mk `u/select [ast]
-  (comp lens/map
-        (mk (:form ast))
-        (lens/filter (fn [s]
-                       (every? (fn [[k f]] (f (k (meta s)))) (:select ast))))))
+  (let [next (mk (:form ast))
+        pred (fn [s]
+               (every? (fn [[k f]] (f (k (meta s))))
+                       (:select ast)))]
+    (fn [f]
+      (fn
+        ([s]
+         (f (ffilter pred (lens/flat-map #(lens/view next %) s))))
+        ([s g] )))))
+
+(defmethod -mk :default [_] lens/id)
