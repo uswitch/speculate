@@ -15,14 +15,17 @@
         :else
         (last xs)))
 
-(def clojure-spec-symbol?
+(def regex-symbol?
   '#{clojure.spec/&
      clojure.spec/*
      clojure.spec/+
      clojure.spec/?
      clojure.spec/alt
-     clojure.spec/and
      clojure.spec/cat
+     clojure.spec/keys*})
+
+(def regular-spec-symbol?
+  '#{clojure.spec/and
      clojure.spec/coll-of
      clojure.spec/double-in
      clojure.spec/every
@@ -32,7 +35,6 @@
      clojure.spec/int-in
      clojure.spec/int-in-range?
      clojure.spec/keys
-     clojure.spec/keys*
      clojure.spec/map-of
      clojure.spec/map-spec
      clojure.spec/nilable
@@ -40,6 +42,9 @@
      clojure.spec/regex?
      clojure.spec/spec
      clojure.spec/tuple})
+
+(def clojure-spec-symbol?
+  (set/union regex-symbol? regular-spec-symbol?))
 
 (def speculate-symbol?
   '#{speculate.spec/override

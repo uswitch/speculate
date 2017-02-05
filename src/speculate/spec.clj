@@ -195,6 +195,36 @@
                   (dissoc definition :alias :categorize :select :gen))
                 '~(util/res spec))))
 
+(defn categorize-impl [spec form opts]
+  (reify
+    s/Spec
+    (s/conform* [_ x] (s/conform* spec x))
+    (s/unform* [_ x] (s/unform* spec x))
+    (s/explain* [_ path via in x] (s/explain* spec path via in x))
+    (s/gen* [_ overrides path rmap] (s/gen* spec overrides path rmap))
+    (s/with-gen* [_ gfn] (s/with-gen* spec gfn))
+    (s/describe* [_] form)
+    clojure.lang.IDeref
+    (deref [_] {:categorize opts})))
+
+(defmacro categorize [spec & {:as opts}]
+  `(categorize-impl ~spec '~(util/res `(categorize ~spec ~@(apply concat opts))) ~opts))
+
+(defn select-impl [spec form opts]
+  (reify
+    s/Spec
+    (s/conform* [_ x] (s/conform* spec x))
+    (s/unform* [_ x] (s/unform* spec x))
+    (s/explain* [_ path via in x] (s/explain* spec path via in x))
+    (s/gen* [_ overrides path rmap] (s/gen* spec overrides path rmap))
+    (s/with-gen* [_ gfn] (s/with-gen* spec gfn))
+    (s/describe* [_] form)
+    clojure.lang.IDeref
+    (deref [_] {:select opts})))
+
+(defmacro select [spec & {:as opts}]
+  `(select-impl ~spec '~(util/res `(select ~spec ~@(apply concat opts))) ~opts))
+
 (defn strict-impl [keys-spec keys-form form]
   (reify
     s/Spec

@@ -163,60 +163,29 @@
    :form (->> pairs
               (partition 2)
               (map (juxt first (comp parse second)))
-              (into {}))})
+              (into (array-map)))})
 
 (defmethod parse `s/alt     [x] (kv-form x))
 (defmethod parse `s/cat     [x] (kv-form x))
 (defmethod parse `s/fspec   [x] (kv-form x))
 (defmethod parse `s/or      [x] (assoc (kv-form x) :spec x))
 
+(defmethod parse `s/? [x]
+  {::type `s/?
+   :form (parse (second x))})
+
 (defn pred-forms [[t & preds]]
   {::type t
    :form (map parse preds)})
 
-(s/def ::nilable-if
-  (s/and seq?
-         (s/cat :if #{'if}
-                :nil? (s/and seq?
-                             (s/cat :nil? #{`nil?}
-                                    :gensym symbol?))
-                :nil #{[::s/nil nil]}
-                :pred (s/tuple #{::s/pred} any?))))
-
-(s/def ::nilable-conformer
-  (s/and seq?
-         (s/cat :conformer #{`s/conformer}
-                :second #{`second}
-                :fn* (s/and seq?
-                            (s/cat :fn* #{'fn*}
-                                   :vector (s/coll-of symbol?
-                                                      :max-count 1
-                                                      :min-count 1
-                                                      :kind vector?)
-                                   :if ::nilable-if)))))
-
-(s/def ::nilable-form
-  (s/cat :and #{`s/and}
-         :or (s/and seq?
-                    (s/cat :or #{`s/or}
-                           :nil #{::s/nil}
-                           :nil? #{`nil?}
-                           :pred #{::s/pred}
-                           :sym any?))
-         :conformer ::nilable-conformer))
-
-(defn matches-nilable? [x]
-  (s/valid? ::nilable-form x))
-
-(defn nilable-pred [x]
-  (-> x second (nth 4)))
-
 (defmethod parse `s/and     [x]
-  (if (matches-nilable? x)
-    (parse (second x))
-    (pred-forms x)))
+  (pred-forms x))
 
 (defmethod parse `s/tuple   [x] (pred-forms x))
+
+(defmethod parse `s/nilable [x]
+  {::type `s/nilable
+   :form (parse (second x))})
 
 (defn pred-opts-form [[t pred & {:as opts}]]
   (merge opts
@@ -237,10 +206,12 @@
   (parse merged-keys-form))
 
 (defmethod parse `map? [m]
-  {::type `map?
-   :form (->> m
-              (map (juxt key (comp parse val)))
-              (into {}))})
+  (if (::s/op m)
+    (parse (s/form m))
+    {::type `map?
+     :form (->> m
+                (map (juxt key (comp parse val)))
+                (into {}))}))
 
 (defn strip-reader-meta [form]
   (dissoc form :line :column))
@@ -283,6 +254,14 @@
 
 (defmethod parse 'clojure.spec/conformer [x])
 
+(defmethod parse 'speculate.spec/categorize [[t x & opts]]
+  {::type t
+   :form (parse x)})
+
+(defmethod parse 'speculate.spec/select [[t x & opts]]
+  {::type t
+   :form (parse x)})
+
 (defmethod parse :default [x]
   (when x
     (if (and (map? x) (::type x))
@@ -291,3 +270,34 @@
 
 (defn coll-type? [{:keys [::type]}]
   (contains? #{`s/every `s/coll-of} type))
+
+(defn unparse [ast]
+  (or (::s/name ast)
+      (case (::type ast)
+        clojure.spec/every
+        `(s/every ~(unparse (:form ast))
+                  ~@(apply concat (dissoc ast ::type :form)))
+        clojure.spec/coll-of
+        `(s/coll-of ~(unparse (:form ast))
+                    ~@(apply concat (dissoc ast ::type :form)))
+        clojure.spec/or
+        (:spec ast)
+        clojure.spec/cat
+        `(s/cat ~@(->> (:form ast)
+                       (map (juxt key (comp unparse val)))
+                       (apply concat)))
+        clojure.spec/?
+        `(s/? ~(unparse (:form ast)))
+        (:form ast))))
+
+(defn conform-1 [ast x]
+  (case (::type ast)
+    clojure.spec/cat
+    (or (some->> (:form ast)
+                 (map (fn [x [k v]]
+                        (when (s/valid? (eval (unparse v)) x) [k x]))
+                      x)
+                 (remove nil?)
+                 (seq)
+                 (into (array-map)))
+        ::s/invalid)))

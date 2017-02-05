@@ -2,7 +2,8 @@
 (def +version+ "0.3.0-SNAPSHOT")
 
 (def dependencies
-  '[[org.clojure/clojure "1.9.0-alpha14"]])
+  '[[org.clojure/clojure "1.9.0-alpha14"]
+    [bifocal "0.1.0-SNAPSHOT"]])
 
 (def dev-dependencies
   '[[org.clojure/test.check "0.9.0"]
