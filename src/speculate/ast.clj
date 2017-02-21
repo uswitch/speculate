@@ -1,8 +1,35 @@
 (ns speculate.ast
-  (:refer-clojure :exclude [alias])
+  (:refer-clojure :exclude [alias descendants])
   (:require
    [clojure.spec :as s]
-   [speculate.util :as util]))
+   [speculate.util :as util]
+   [speculate.transform.state :as state]
+   [clojure.set :as set]))
+
+(defn children [{:keys [::type form] :as ast}]
+  (case type
+    clojure.spec/keys         (mapcat form [:req :req-un :opt :opt-un])
+    clojure.spec/every        (list form)
+    clojure.spec/and          (list form)
+    clojure.spec/or           (vals form)
+    clojure.spec/nilable      (list form)
+    clojure.spec/tuple        form
+    clojure.spec/map-of       (list form) ; this is not right in parsing
+    speculate.spec/categorize (list form)
+    speculate.spec/select     (list form)
+    '()))
+
+(def descendants*
+  (memoize
+   (fn [ast]
+     (let [children (children ast)]
+       (if (seq children)
+         (concat (remove nil? (map ::name children))
+                 (mapcat descendants* children))
+         [])))))
+
+(defn descendants [ast]
+  (set (descendants* ast)))
 
 (defn alias [spec]
   (when-let [s (get (s/registry) spec)]
@@ -20,6 +47,9 @@
 
 (defn walked [value]
   (->Walked value))
+
+(defn walked? [value]
+  (instance? Walked value))
 
 (defn walk [f ast]
   (let [value (f ast)]
@@ -77,6 +107,52 @@
        (mapcat (juxt (comp ffirst :alias-map) :alias :label))
        (remove nil?)
        (set)))
+
+(defn categories [ast]
+  (walk (fn [{:keys [categorize]}] (if categorize (keys categorize) [])) ast))
+
+(defn walk-state [state f ast]
+  (let [[value state :as return] (f state ast)]
+    (if (instance? Walked value)
+      [(:value value) state]
+      (let [[value' state']
+            (if (= (::type ast) 'speculate.spec/spec)
+              (let [{:keys [::name alias leaf form]} ast]
+                (if (not leaf)
+                  (walk-state state f form)
+                  [[] state]))
+              (state/map state
+                         #(walk-state % f %2)
+                         (children ast)))]
+        [(concat value value') state']))))
+
+(defn walk-state-2 [state f ast]
+  (let [[value state :as return] (f state ast)]
+    (if (instance? Walked value)
+      [(:value value) state]
+      (if (= (::type ast) 'speculate.spec/spec)
+        (let [{:keys [::name alias leaf form]} ast]
+          (if (not leaf)
+            (walk-state-2 state f form)
+            [nil state]))
+        (state/map state
+                   #(walk-state-2 % f %2)
+                   (children ast))))))
+
+(defn categorized-leaves [ast]
+  (->> ast
+       (walk-state #{}
+                   (fn [state {:keys [categorize leaf] :as ast}]
+                     (let [state (cond-> state
+                                   categorize
+                                   (set/union (set (keys categorize))))]
+                       (if leaf
+                         [(-> ast
+                              (node-value)
+                              (assoc-in [0 :categorize] state)) state]
+                         [[] state]))))
+       (first)
+       (distinct)))
 
 (defn shake [keepset {:keys [::name] :as ast}]
   (if (and name
@@ -150,13 +226,14 @@
 (defmulti parse categorize)
 
 (defmethod parse `s/keys [[t & pairs]]
-  (let [form (apply hash-map pairs)]
+  (let [form (apply hash-map pairs)
+        tag (fn [k] (fn [x] (assoc x :key-type k)))]
     {::type t
      :form (-> form
-               (update :req    (partial mapv parse))
-               (update :req-un (partial mapv parse))
-               (update :opt    (partial mapv parse))
-               (update :opt-un (partial mapv parse)))}))
+               (update :req    (partial mapv (comp (tag :req)    parse)))
+               (update :req-un (partial mapv (comp (tag :req-un) parse)))
+               (update :opt    (partial mapv (comp (tag :opt)    parse)))
+               (update :opt-un (partial mapv (comp (tag :opt-un) parse))))}))
 
 (defn kv-form [[t & pairs]]
   {::type t
@@ -254,13 +331,15 @@
 
 (defmethod parse 'clojure.spec/conformer [x])
 
-(defmethod parse 'speculate.spec/categorize [[t x & opts]]
+(defmethod parse 'speculate.spec/categorize [[t x & {:as opts}]]
   {::type t
-   :form (parse x)})
+   :form (parse x)
+   :categorize opts})
 
-(defmethod parse 'speculate.spec/select [[t x & opts]]
+(defmethod parse 'speculate.spec/select [[t x & {:as opts}]]
   {::type t
-   :form (parse x)})
+   :form (parse x)
+   :select opts})
 
 (defmethod parse :default [x]
   (when x

@@ -1,5 +1,5 @@
 (ns speculate.transform.state
-  (:refer-clojure :exclude [concat map map-indexed merge])
+  (:refer-clojure :exclude [concat map mapcat map-indexed merge])
   (:require [speculate.util :as util]))
 
 (alias 'c 'clojure.core)
@@ -32,6 +32,10 @@
             [(c/concat value values) state'']
             [value state'])))
       [nil state])))
+
+(defn mapcat [state f & colls]
+  (let [[values state] (apply map state f colls)]
+    [(apply c/concat values) state]))
 
 (defn map-indexed [state f & colls]
   (apply map state f (range) colls))
