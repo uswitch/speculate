@@ -63,8 +63,9 @@ With Leiningen/Boot:
 (s/def ::apple (s/keys :req-un [::color ::diameter] :opt-un [::description]))
 
 (require '[speculate.json-schema :as js])
+(require '[speculate.ast :as ast])
 
-(js/schema ::apple)
+(js/schema (ast/parse ::apple))
 
 => {:type object,
     :properties {"color" {:enum #{"yellow" "green" "red"},
