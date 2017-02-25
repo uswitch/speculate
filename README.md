@@ -45,7 +45,7 @@ With Leiningen/Boot:
 
 ``` clj
 ;; In active development
-[speculate "0.1.0-SNAPSHOT"]
+[speculate "0.3.0-SNAPSHOT"]
 
 ```
 
@@ -111,8 +111,9 @@ With Leiningen/Boot:
    :spec (s/keys :req-un [::apples])))
 
 (require '[speculate.json-schema :as js])
+(require '[speculate.ast :as ast])
 
-(js/schema ::apple)
+(js/schema (ast/parse ::apple))
 
 => {:properties {"apples" {:type array
                            :items {:properties {"color" {:enum #{"yellow" "green" "red"}
@@ -135,7 +136,7 @@ With Leiningen/Boot:
                   rose family best known for its sweet pomaceous fruit
                   the apple."}
 
-(js/schema ::apple-tree :extract-definitions? true)
+(js/schema (ast/parse ::apple-tree) :extract-definitions? true)
 
 => {"AppleTree" {:properties {"apples" {:type array
                                         :items {"$ref" "#!/definitions/Apple"}}}
