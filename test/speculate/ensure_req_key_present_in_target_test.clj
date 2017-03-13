@@ -1,4 +1,4 @@
-(ns speculate.asdf-test
+(ns speculate.ensure-req-key-present-in-target-test
   (:require
     [clojure.edn :as edn]
     [clojure.spec :as s]
