@@ -3,7 +3,7 @@
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
-   [clojure.spec :as s]
+   [clojure.spec.alpha :as s]
    [clojure.spec.override]
    [clojure.string :as string]
    [clojure.walk :as walk]
