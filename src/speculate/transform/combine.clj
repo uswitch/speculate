@@ -2,10 +2,11 @@
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
-   [clojure.spec :as s]
+   [clojure.spec.alpha :as s]
    [speculate.ast :as ast]
    [speculate.transform.maybe :as maybe]
-   [speculate.util :as util]))
+   [speculate.util :as util]
+   [clojure.future :refer :all]))
 
 (defn assert-conform! [spec value]
   (when-not (s/valid? spec value)
@@ -100,8 +101,8 @@
             value (cond (maybe/nothing? value)
                         maybe/Nothing
                         (and (= :opt req?)
-                             ('#{clojure.spec/coll-of
-                                 clojure.spec/every} (::ast/type form))
+                             ('#{clojure.spec.alpha/coll-of
+                                 clojure.spec.alpha/every} (::ast/type form))
                              (empty? value))
                         maybe/Nothing
                         :else value)]
@@ -113,7 +114,7 @@
                (assert-conform! name)
                (construct name)))))))
 
-(defmethod -combine 'clojure.spec/keys
+(defmethod -combine 'clojure.spec.alpha/keys
   [value-index index-meta {:keys [keys?] :as ast}]
   (let [{:keys [req req-un opt opt-un]} (:form ast)
         keys?-pred (some-> value-index first :categorize (get keys?))
@@ -237,15 +238,15 @@
                        (maybe/keep #(combine % index-meta (:form ast)))
                        (into coll-into))))))
 
-(defmethod -combine 'clojure.spec/every
+(defmethod -combine 'clojure.spec.alpha/every
   [value-index index-meta ast]
   (coll-combine value-index index-meta ast))
 
-(defmethod -combine 'clojure.spec/coll-of
+(defmethod -combine 'clojure.spec.alpha/coll-of
   [value-index index-meta ast]
   (coll-combine value-index index-meta ast))
 
-(defmethod -combine 'clojure.spec/and
+(defmethod -combine 'clojure.spec.alpha/and
   [value-index index-meta ast]
   (->> (:form ast)
        (filter (f-or (comp s/spec? ::ast/name)
@@ -256,7 +257,7 @@
                          v'
                          maybe/Nothing))))))
 
-(defmethod -combine 'clojure.spec/or
+(defmethod -combine 'clojure.spec.alpha/or
   [value-index index-meta {:keys [form] :as ast}]
   (let [ks (set (keys form))]
     (maybe/some (fn [[k v]]
@@ -313,9 +314,9 @@
         categorize? (:categorize ast)
         {[key-cat] :key-cat} (group-by key-cat? categorize?)
         form-type (condp = (::ast/type form)
-                    'clojure.spec/keys    :map
-                    'clojure.spec/coll-of :coll
-                    'clojure.spec/every   :coll
+                    'clojure.spec.alpha/keys    :map
+                    'clojure.spec.alpha/coll-of :coll
+                    'clojure.spec.alpha/every   :coll
                     :other)
         value-index' (->> value-index
                           (categorize-value-index categorized

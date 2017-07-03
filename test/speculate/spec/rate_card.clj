@@ -2,9 +2,10 @@
   (:require
    [clj-time.coerce :refer [to-date]]
    [clj-time.format :refer [formatter parse]]
-   [clojure.spec :as s]
+   [clojure.spec.alpha :as s]
    [speculate.spec :as u]
-   [speculate.util :as util]))
+   [speculate.util :as util]
+   [clojure.future :refer :all]))
 
 (def dfmt (formatter "dd/MM/yyyy"))
 (defn coerce [pred coerce-fn]

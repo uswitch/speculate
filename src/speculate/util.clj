@@ -4,8 +4,8 @@
    [clojure.string :as string]
    [clojure.walk :as walk]
    [clojure.set :as set]
-   [clojure.spec :as s]
-   [clojure.spec.gen :as gen]))
+   [clojure.spec.alpha :as s]
+   [clojure.spec.gen.alpha :as gen]))
 
 (defn deep-merge [& xs]
   (cond (every? map? xs)
@@ -16,30 +16,30 @@
         (last xs)))
 
 (def clojure-spec-symbol?
-  '#{clojure.spec/&
-     clojure.spec/*
-     clojure.spec/+
-     clojure.spec/?
-     clojure.spec/alt
-     clojure.spec/and
-     clojure.spec/cat
-     clojure.spec/coll-of
-     clojure.spec/double-in
-     clojure.spec/every
-     clojure.spec/every-kv
-     clojure.spec/fspec
-     clojure.spec/inst-in
-     clojure.spec/int-in
-     clojure.spec/int-in-range?
-     clojure.spec/keys
-     clojure.spec/keys*
-     clojure.spec/map-of
-     clojure.spec/map-spec
-     clojure.spec/nilable
-     clojure.spec/or
-     clojure.spec/regex?
-     clojure.spec/spec
-     clojure.spec/tuple})
+  '#{clojure.spec.alpha/&
+     clojure.spec.alpha/*
+     clojure.spec.alpha/+
+     clojure.spec.alpha/?
+     clojure.spec.alpha/alt
+     clojure.spec.alpha/and
+     clojure.spec.alpha/cat
+     clojure.spec.alpha/coll-of
+     clojure.spec.alpha/double-in
+     clojure.spec.alpha/every
+     clojure.spec.alpha/every-kv
+     clojure.spec.alpha/fspec
+     clojure.spec.alpha/inst-in
+     clojure.spec.alpha/int-in
+     clojure.spec.alpha/int-in-range?
+     clojure.spec.alpha/keys
+     clojure.spec.alpha/keys*
+     clojure.spec.alpha/map-of
+     clojure.spec.alpha/map-spec
+     clojure.spec.alpha/nilable
+     clojure.spec.alpha/or
+     clojure.spec.alpha/regex?
+     clojure.spec.alpha/spec
+     clojure.spec.alpha/tuple})
 
 (def speculate-symbol?
   '#{speculate.spec/override

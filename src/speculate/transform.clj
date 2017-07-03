@@ -3,7 +3,7 @@
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
-   [clojure.spec :as s]
+   [clojure.spec.alpha :as s]
    [clojure.spec.override]
    [clojure.string :as string]
    [clojure.walk :as walk]
@@ -55,7 +55,7 @@
 
 (defn format-problems [explaination]
   (->> explaination
-       (:clojure.spec/problems)
+       (:clojure.spec.alpha/problems)
        (map (fn [{:keys [path pred val in]}]
               (format "path: %s\npred: %s\n in:   %s\n val:\n%s\n"
                       path pred in (with-out-str (clojure.pprint/pprint val)))))

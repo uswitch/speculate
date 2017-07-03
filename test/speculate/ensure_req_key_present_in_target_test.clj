@@ -1,9 +1,10 @@
 (ns speculate.ensure-req-key-present-in-target-test
   (:require
     [clojure.edn :as edn]
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.test :refer [deftest is]]
-    [speculate.transform :as tx]))
+    [speculate.transform :as tx]
+    [clojure.future :refer :all]))
 
 (s/def ::a (s/nilable int?))
 (s/def ::b (s/nilable int?))

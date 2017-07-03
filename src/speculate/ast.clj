@@ -1,8 +1,9 @@
 (ns speculate.ast
   (:refer-clojure :exclude [alias])
   (:require
-   [clojure.spec :as s]
-   [speculate.util :as util]))
+   [clojure.spec.alpha :as s]
+   [speculate.util :as util]
+   [clojure.future :refer :all]))
 
 (defn alias [spec]
   (when-let [s (get (s/registry) spec)]
@@ -29,20 +30,20 @@
        value
        (case (::type ast)
 
-         clojure.spec/keys
+         clojure.spec.alpha/keys
          (let [{:keys [req req-un opt opt-un]} (:form ast)]
            (mapcat (partial walk f) (concat req req-un opt opt-un)))
 
-         clojure.spec/every
+         clojure.spec.alpha/every
          (walk f (:form ast))
 
-         clojure.spec/coll-of
+         clojure.spec.alpha/coll-of
          (walk f (:form ast))
 
-         clojure.spec/or
+         clojure.spec.alpha/or
          (mapcat (comp (partial walk f) val) (:form ast))
 
-         clojure.spec/and
+         clojure.spec.alpha/and
          (mapcat (partial walk f) (:form ast))
 
          speculate.spec/spec
@@ -85,7 +86,7 @@
                (contains? keepset (alias name))))
     ast
     (case (::type ast)
-      clojure.spec/keys
+      clojure.spec.alpha/keys
       (let [{:keys [req req-un opt opt-un]} (:form ast)
             req    (seq (keep (partial shake keepset) req))
             req-un (seq (keep (partial shake keepset) req-un))
@@ -98,13 +99,13 @@
                      opt-un (assoc :opt-un opt-un))]
         (when form
           (assoc ast :form form)))
-      clojure.spec/or
+      clojure.spec.alpha/or
       (some->> (:form ast)
                (keep (juxt first (comp (partial shake keepset) second)))
                (seq)
                (into {})
                (assoc ast :form))
-      clojure.spec/and
+      clojure.spec.alpha/and
       (let [spec? #(or (util/spec-symbol? (::type %))
                        (s/spec? (::name %)))]
         (some->> (:form ast)
@@ -253,11 +254,11 @@
       (instance? clojure.lang.IDeref x) (merge (deref x)))))
 
 (def complex-type?
-  (comp '#{clojure.spec/coll-of
-           clojure.spec/every
-           clojure.spec/keys
-           clojure.spec/tuple
-           clojure.spec/map-of} ::type))
+  (comp '#{clojure.spec.alpha/coll-of
+           clojure.spec.alpha/every
+           clojure.spec.alpha/keys
+           clojure.spec.alpha/tuple
+           clojure.spec.alpha/map-of} ::type))
 
 (defn leaf?
   "An AST is not a leaf if any of it's decendents has a ::name"
@@ -281,7 +282,7 @@
   {::type `set?
    :form x})
 
-(defmethod parse 'clojure.spec/conformer [x])
+(defmethod parse 'clojure.spec.alpha/conformer [x])
 
 (defmethod parse :default [x]
   (when x
