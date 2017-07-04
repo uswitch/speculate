@@ -4,8 +4,8 @@
    [clojure.string :as string]
    [clojure.walk :as walk]
    [clojure.set :as set]
-   [clojure.spec.alpha :as s]
-   [clojure.spec.gen.alpha :as gen]))
+   [clojure.spec :as s]
+   [clojure.spec.gen :as gen]))
 
 (defn deep-merge [& xs]
   (cond (every? map? xs)

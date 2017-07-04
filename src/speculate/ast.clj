@@ -1,7 +1,7 @@
 (ns speculate.ast
   (:refer-clojure :exclude [alias])
   (:require
-   [clojure.spec.alpha :as s]
+   [clojure.spec :as s]
    [speculate.util :as util]))
 
 (defn alias [spec]

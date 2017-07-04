@@ -1,7 +1,7 @@
 (ns speculate.ensure-req-key-present-in-target-test
   (:require
     [clojure.edn :as edn]
-    [clojure.spec.alpha :as s]
+    [clojure.spec :as s]
     [clojure.test :refer [deftest is]]
     [speculate.transform :as tx]))
 

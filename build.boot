@@ -2,8 +2,7 @@
 (def +version+ "0.3.0-SNAPSHOT")
 
 (def dependencies
-  '[[org.clojure/clojure "1.8.0"]
-    [clojure-future-spec "1.9.0-alpha17"]])
+  '[[org.clojure/clojure "1.9.0-alpha14"]])
 
 (def dev-dependencies
   '[[org.clojure/test.check "0.9.0"]

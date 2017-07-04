@@ -2,7 +2,7 @@
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
-   [clojure.spec.alpha :as s]
+   [clojure.spec :as s]
    [speculate.ast :as ast]
    [speculate.transform.maybe :as maybe]
    [speculate.util :as util]))

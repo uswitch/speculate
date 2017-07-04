@@ -1,6 +1,6 @@
 (ns speculate.spec.tariff
   (:require
-   [clojure.spec.alpha :as s]
+   [clojure.spec :as s]
    [speculate.spec :as u]
    [speculate.util :as util]
    [speculate.spec.rate-card :as rate-card]))

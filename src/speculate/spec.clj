@@ -1,8 +1,8 @@
 (ns speculate.spec
   (:require
    [clojure.set :as set]
-   [clojure.spec.alpha :as s]
-   [clojure.spec.gen.alpha :as gen]
+   [clojure.spec :as s]
+   [clojure.spec.gen :as gen]
    [clojure.walk :as walk]
    [speculate.util :as util]))
 
