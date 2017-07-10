@@ -1,10 +1,10 @@
 (ns clojure.spec.override
   (:require
-   [clojure.spec :refer :all]))
-
-(in-ns 'clojure.spec)
+   [clojure.spec.alpha :refer :all]))
 
 (alias 'c 'clojure.core)
+
+(in-ns 'clojure.spec.alpha)
 
 (defn ^:skip-wiki every-impl
   "Do not call this directly, use 'every', 'every-kv', 'coll-of' or 'map-of'"
@@ -78,7 +78,7 @@
                      (cond (and (not (fn? pred))
                                 (contains? (registry) pred))
                            (unform pred x)
-                           (satisfies? clojure.spec/Spec pred)
+                           (satisfies? clojure.spec.alpha/Spec pred)
                            (unform pred x)
                            :else x))]
              (cond (vector? x)

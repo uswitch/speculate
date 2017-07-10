@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [derive find])
   (:require
    [clojure.set :as set]
-   [clojure.spec :as s]
+   [clojure.spec.alpha :as s]
    [clojure.walk :as walk]
    [speculate.ast :as ast]
    [speculate.render :as render]

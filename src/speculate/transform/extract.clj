@@ -3,7 +3,7 @@
   (:require
    [clojure.pprint :refer [pprint]]
    [clojure.set :as set]
-   [clojure.spec :as s]
+   [clojure.spec.alpha :as s]
    [clojure.spec.override]
    [speculate.ast :as ast]
    [speculate.util :as util]
@@ -74,7 +74,7 @@
                 included (state/update-value concat included)
                 pulled   (state/update-value concat pulled)))))))
 
-(defmethod -walk 'clojure.spec/keys
+(defmethod -walk 'clojure.spec.alpha/keys
   [state ast node]
   (let [{:keys [req req-un opt opt-un]} (:form ast)
         f (fn [un? req? s {:keys [leaf] :as branch-ast}]
@@ -112,25 +112,25 @@
                              (state/reset state :coll-indexes)))
                        node)))
 
-(defmethod -walk 'clojure.spec/every
+(defmethod -walk 'clojure.spec.alpha/every
   [state ast node]
   (-walk-coll state ast node))
 
-(defmethod -walk 'clojure.spec/coll-of
+(defmethod -walk 'clojure.spec.alpha/coll-of
   [state ast node]
   (-walk-coll state ast node))
 
 (defn f-or [& fs]
   (comp (partial some identity) (apply juxt fs)))
 
-(defmethod -walk 'clojure.spec/and
+(defmethod -walk 'clojure.spec.alpha/and
   [state ast node]
   (let [specs (filter (f-or (comp s/spec? ::ast/name)
                             (comp util/spec-symbol? ::ast/type))
                       (:form ast))]
     (walk state (first specs) node)))
 
-(defmethod -walk 'clojure.spec/or
+(defmethod -walk 'clojure.spec.alpha/or
   [state ast node]
   (let [label (::ast/name ast)
         spec (or label (eval (:spec ast)))
@@ -138,7 +138,7 @@
         _ (assert-conform! label node conformed)
         [or-key _] conformed
         form (get (:form ast) or-key)]
-    (if (contains? '#{clojure.spec/pred clojure.spec/nil} or-key)
+    (if (contains? '#{clojure.spec.alpha/pred clojure.spec.alpha/nil} or-key)
       (walk form node)
       (-> state
           (update :categorize assoc or-key #{or-key})
@@ -230,9 +230,9 @@
     (-> (cond (:categorize ast)
               (try
                 (condp = (::ast/type form)
-                  'clojure.spec/keys    (categorize-map state' ast form node)
-                  'clojure.spec/coll-of (categorize-coll state' ast form node)
-                  'clojure.spec/every   (categorize-coll state' ast form node)
+                  'clojure.spec.alpha/keys    (categorize-map state' ast form node)
+                  'clojure.spec.alpha/coll-of (categorize-coll state' ast form node)
+                  'clojure.spec.alpha/every   (categorize-coll state' ast form node)
                   (categorize-map state' ast form node))
                 (catch clojure.lang.ExceptionInfo e
                   (if (= :invalid-categorization (:type (ex-data e)))

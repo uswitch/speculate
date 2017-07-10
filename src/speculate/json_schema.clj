@@ -9,7 +9,7 @@
    [speculate.render :refer [render]]))
 
 (def description-keys
-  #{:clojure.spec/name :name :type :title :description})
+  #{:clojure.spec.alpha/name :name :type :title :description})
 
 (def validation-keys
   {;; number
@@ -124,7 +124,7 @@
   [_ {:keys [form] :as x}]
   (merge (type form) (select-keys x schema-keys)))
 
-(defmethod render [::renderer 'clojure.spec/keys]
+(defmethod render [::renderer 'clojure.spec.alpha/keys]
   [_ {{:keys [req req-un opt opt-un]} :form :as spec}]
   (let [pname (::ast/name spec)
         title (some-> pname name util/pascal-case)
@@ -140,7 +140,7 @@
                title (assoc :title title))]
     (merge base (select-keys spec schema-keys))))
 
-(defmethod render [::renderer 'clojure.spec/every]
+(defmethod render [::renderer 'clojure.spec.alpha/every]
   [_ {:keys [form] :as spec}]
   ;; this could also be a map-of
   ;; (and (form? form) (= `s/tuple (first form)))
@@ -149,7 +149,7 @@
               :items (render ::renderer form)}]
     (merge base (select-keys spec schema-keys))))
 
-(defmethod render [::renderer 'clojure.spec/coll-of]
+(defmethod render [::renderer 'clojure.spec.alpha/coll-of]
   [_ {:keys [form] :as spec}]
   ;; this could also be a map-of
   ;; (and (form? form) (= `s/tuple (first form)))
@@ -158,11 +158,11 @@
               :items (render ::renderer form)}]
     (merge base (select-keys spec schema-keys))))
 
-(defmethod render [::renderer 'clojure.spec/and]
+(defmethod render [::renderer 'clojure.spec.alpha/and]
   [_ {:keys [form] :as spec}]
   (merge (reduce merge {} (map (partial render ::renderer) form)) spec))
 
-(defmethod render [::renderer 'clojure.spec/or]
+(defmethod render [::renderer 'clojure.spec.alpha/or]
   [_ {:keys [form]}]
   {:one-of (map (comp (partial render ::renderer) second) form)})
 

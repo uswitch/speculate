@@ -1,6 +1,7 @@
 (ns speculate.spec.combine
   (:require
-   [clojure.spec :as s]))
+   [clojure.spec.alpha :as s]
+   [clojure.future :refer :all]))
 
 (s/def ::label keyword?)
 (s/def ::value any?)
