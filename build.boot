@@ -1,5 +1,5 @@
 (def +project+ 'speculate)
-(def +version+ "0.3.1")
+(def +version+ "0.3.2-SNAPSHOT")
 
 (def dependencies
   '[[org.clojure/clojure "1.8.0"]
